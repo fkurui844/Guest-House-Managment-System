@@ -941,7 +941,9 @@ window.doRegister = async () => {
   if (pass.length < 6) { toast('Password must be at least 6 characters','error'); return; }
 
   const btn = document.getElementById('registerBtn');
+  const resetBtn = () => { btn.disabled=false; btn.innerHTML='<i class="fas fa-building"></i> Create Account'; };
   btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Creating account…';
+  const timeout = setTimeout(() => { resetBtn(); toast('Timed out — check Firestore rules in Firebase Console','error'); }, 15000);
 
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -966,11 +968,15 @@ window.doRegister = async () => {
       name, email, role:'owner', status:'active', uid, createdAt: serverTimestamp()
     });
 
+    clearTimeout(timeout);
     toast(`Welcome to StayDesk, ${name}! 🎉`,'success');
   } catch(e) {
-    toast(friendlyAuthError(e.code),'error');
-    btn.disabled=false;
-    btn.innerHTML='<i class="fas fa-building"></i> Create Account';
+    clearTimeout(timeout);
+    const msg = (e.code||'').includes('permission')
+      ? 'Firestore rules are blocking the write — publish open rules in Firebase Console → Firestore → Rules'
+      : (friendlyAuthError(e.code) || e.message);
+    toast(msg, 'error');
+    resetBtn();
   }
 };
 
