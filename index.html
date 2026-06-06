@@ -839,11 +839,14 @@ async function handleAuthState(user) {
   if (!user) { showScreen('authScreen'); return; }
   currentUser = user;
   try {
+    console.log('🔍 Looking up userProfiles/' + user.uid);
     const profSnap = await getDoc(doc(db,'userProfiles',user.uid));
     if (!profSnap.exists()) {
-      toast('Account profile not found — please register a business first','error');
+      toast('Profile not found for UID: ' + user.uid + ' — see console for details','error');
+      console.error('❌ No userProfiles doc for UID:', user.uid, '— create it in Firestore with this exact ID');
       await doLogout(); return;
     }
+    console.log('✅ userProfiles found:', profSnap.data());
     const prof = profSnap.data();
     bizId = prof.bizId;
     userRole = prof.role;
