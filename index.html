@@ -799,33 +799,25 @@ let payments = [];
 let users = [];
 let listeners = [];
 
+// ===== FIREBASE CONFIG (hardcoded) =====
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAQ2tuO2IyA6EO-H_J8eYZ3fUmziwibyB0",
+  authDomain: "guest-house-management-s-ab4f4.firebaseapp.com",
+  databaseURL: "https://guest-house-management-s-ab4f4-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "guest-house-management-s-ab4f4",
+  storageBucket: "guest-house-management-s-ab4f4.firebasestorage.app",
+  messagingSenderId: "651018627975",
+  appId: "1:651018627975:web:0a33688e2c4b1c261e4122"
+};
+
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', () => {
-  const cfg = loadConfig();
-  if (!cfg) { showScreen('setupScreen'); return; }
-  bootFirebase(cfg);
+  bootFirebase(FIREBASE_CONFIG);
 });
 
-function loadConfig() {
-  const saved = localStorage.getItem('sdFirebaseConfig');
-  return saved ? JSON.parse(saved) : null;
-}
-
-window.showSetup = () => showScreen('setupScreen');
-
-window.initFirebase = () => {
-  const cfg = {
-    apiKey: v('cfg_apiKey'),
-    authDomain: v('cfg_authDomain'),
-    projectId: v('cfg_projectId'),
-    storageBucket: v('cfg_storageBucket'),
-    messagingSenderId: v('cfg_messagingSenderId'),
-    appId: v('cfg_appId'),
-  };
-  if (!cfg.apiKey || !cfg.projectId) { toast('Please fill in all Firebase config fields','error'); return; }
-  localStorage.setItem('sdFirebaseConfig', JSON.stringify(cfg));
-  bootFirebase(cfg);
-};
+function loadConfig() { return FIREBASE_CONFIG; }
+window.showSetup = () => toast('Firebase is already configured','info');
+window.initFirebase = () => bootFirebase(FIREBASE_CONFIG);
 
 function bootFirebase(cfg) {
   try {
@@ -834,7 +826,7 @@ function bootFirebase(cfg) {
     db = getFirestore(app);
     onAuthStateChanged(auth, handleAuthState);
   } catch(e) {
-    showScreen('setupScreen');
+    showScreen('authScreen');
     toast('Firebase init failed: ' + e.message,'error');
   }
 }
@@ -1366,9 +1358,8 @@ function clearFields(ids) { ids.forEach(id=>{const el=document.getElementById(id
 function capitalize(s){ return s?(s[0].toUpperCase()+s.slice(1)):''; }
 
 function showScreen(id) {
-  ['setupScreen','authScreen','mainApp'].forEach(s=>document.getElementById(s).style.display='none');
-  document.getElementById(id).style.display = id==='mainApp'?'flex':
-    id==='authScreen'?'flex':'flex';
+  ['authScreen','mainApp'].forEach(s=>document.getElementById(s).style.display='none');
+  document.getElementById(id).style.display = 'flex'; //
 }
 
 let toastTimer;
