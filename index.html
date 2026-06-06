@@ -923,12 +923,19 @@ window.doLogin = async () => {
   const email = v('loginEmail'), pass = v('loginPass');
   if (!email||!pass) { toast('Enter email and password','error'); return; }
   const btn = document.getElementById('loginBtn');
+  const resetBtn = () => { btn.disabled=false; btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Sign In'; };
   btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Signing in…';
+  const timeout = setTimeout(() => { resetBtn(); toast('Sign-in timed out — check your connection or Firebase config','error'); }, 12000);
   try {
     await signInWithEmailAndPassword(auth, email, pass);
+    clearTimeout(timeout);
+    // Button reset is handled after handleAuthState loads the app;
+    // reset here as a safety net in case auth state takes a moment.
+    resetBtn();
   } catch(e) {
+    clearTimeout(timeout);
     toast(friendlyAuthError(e.code),'error');
-    btn.disabled=false; btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Sign In';
+    resetBtn();
   }
 };
 
