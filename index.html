@@ -254,7 +254,7 @@ tbody tr:hover td{background:var(--surface2);}
 .alert-toast.info i{color:var(--blue);}
 
 /* ===== FIREBASE SETUP SCREEN ===== */
-.setup-shell{
+.setup-shell{display:none!important;
   min-height:100vh;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(135deg,#0f0f0f,#1a1a12);padding:30px;
 }
@@ -824,6 +824,7 @@ function bootFirebase(cfg) {
     app = initializeApp(cfg);
     auth = getAuth(app);
     db = getFirestore(app);
+    showScreen("authScreen");
     onAuthStateChanged(auth, handleAuthState);
   } catch(e) {
     showScreen('authScreen');
