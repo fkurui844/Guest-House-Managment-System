@@ -839,14 +839,34 @@ async function handleAuthState(user) {
   if (!user) { showScreen('authScreen'); return; }
   currentUser = user;
   try {
-    console.log('🔍 Looking up userProfiles/' + user.uid);
     const profSnap = await getDoc(doc(db,'userProfiles',user.uid));
     if (!profSnap.exists()) {
-      toast('Profile not found for UID: ' + user.uid + ' — see console for details','error');
-      console.error('❌ No userProfiles doc for UID:', user.uid, '— create it in Firestore with this exact ID');
+      // Self-heal: profile missing — try to find a matching business and rebuild
+      const bizDocId = 'biz_' + user.uid;
+      const bizSnap = await getDoc(doc(db,'businesses',bizDocId));
+      if (bizSnap.exists()) {
+        const biz = bizSnap.data();
+        await setDoc(doc(db,'userProfiles',user.uid), {
+          name: biz.name || user.displayName || user.email.split('@')[0],
+          email: user.email,
+          role: 'owner',
+          bizId: bizDocId,
+          createdAt: serverTimestamp()
+        });
+        toast('Profile restored automatically — signing you in…','success');
+        // re-fetch after creating
+        const profSnap2 = await getDoc(doc(db,'userProfiles',user.uid));
+        const prof2 = profSnap2.data();
+        bizId = prof2.bizId;
+        userRole = prof2.role;
+        const bizSnap2 = await getDoc(doc(db,'businesses',bizId));
+        if (!bizSnap2.exists()) { toast('Business record not found','error'); await doLogout(); return; }
+        currentBiz = { id: bizId, ...bizSnap2.data() };
+        bootApp(); return;
+      }
+      toast('Account profile not found — please register a new business','error');
       await doLogout(); return;
     }
-    console.log('✅ userProfiles found:', profSnap.data());
     const prof = profSnap.data();
     bizId = prof.bizId;
     userRole = prof.role;
