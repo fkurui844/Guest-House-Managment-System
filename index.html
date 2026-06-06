@@ -482,13 +482,13 @@ service cloud.firestore {
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Operations</div>
-      <div class="nav-item active" onclick="showSection('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</div>
-      <div class="nav-item" onclick="showSection('rooms')"><i class="fas fa-door-open"></i> Rooms</div>
-      <div class="nav-item" onclick="showSection('bookings')"><i class="fas fa-calendar-check"></i> Bookings</div>
-      <div class="nav-item" onclick="showSection('payments')"><i class="fas fa-credit-card"></i> Payments</div>
-      <div class="nav-section-label">Management</div>
+      <div class="nav-item active" id="navDashboard" onclick="showSection('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</div>
+      <div class="nav-item" id="navRooms" onclick="showSection('rooms')"><i class="fas fa-door-open"></i> Rooms</div>
+      <div class="nav-item" id="navBookings" onclick="showSection('bookings')"><i class="fas fa-calendar-check"></i> Bookings</div>
+      <div class="nav-item" id="navPayments" onclick="showSection('payments')"><i class="fas fa-credit-card"></i> Payments</div>
+      <div class="nav-section-label" id="navManagementLabel">Management</div>
       <div class="nav-item" id="navUsers" onclick="showSection('users')"><i class="fas fa-users"></i> Staff Users</div>
-      <div class="nav-item" onclick="showSection('profile')"><i class="fas fa-building"></i> Business Profile</div>
+      <div class="nav-item" id="navProfile" onclick="showSection('profile')"><i class="fas fa-building"></i> Business Profile</div>
     </nav>
     <div class="sidebar-bottom">
       <div class="sidebar-user">
@@ -725,22 +725,22 @@ service cloud.firestore {
     <div class="modal-body">
       <div class="form-group"><label>Full Name</label><input id="uName" placeholder="Jane Odhiambo"></div>
       <div class="form-group"><label>Email</label><input id="uEmail" type="email" placeholder="jane@business.com"></div>
-      <div class="form-group"><label>Temporary Password</label><input id="uPass" type="password" placeholder="Min 6 characters"></div>
+      <div class="form-group"><label>Temporary Password <span style="font-weight:400;color:var(--ink-muted)">(share with staff)</span></label><input id="uPass" type="text" placeholder="Min 6 characters"></div>
       <div class="form-group"><label>Role</label>
-        <select id="uRole">
-          <option value="receptionist">Receptionist</option>
+        <select id="uRole" onchange="updateRoleInfo(this.value)">
+          <option value="receptionist" selected>Receptionist</option>
           <option value="manager">Manager</option>
           <option value="accountant">Accountant</option>
           <option value="housekeeping">Housekeeping</option>
         </select>
       </div>
-      <div style="background:var(--gold-light);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--gold-dark);">
-        <i class="fas fa-info-circle"></i> This will create a Firebase Auth account for the staff member. They will be linked to your business.
+      <div id="roleInfoBox" style="background:var(--gold-light);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--gold-dark);">
+        <i class="fas fa-door-open"></i> <strong>Receptionist access:</strong> Rooms, Bookings &amp; Payments only. No access to Staff management or Business settings.
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveUser()"><i class="fas fa-user-plus"></i> Create Account</button>
+      <button class="btn btn-primary" id="saveUserBtn" onclick="saveUser()"><i class="fas fa-user-plus"></i> Invite &amp; Create Account</button>
     </div>
   </div>
 </div>
@@ -890,11 +890,14 @@ function bootApp() {
   showScreen('mainApp');
   populateSidebar();
   startListeners();
-  showSection('dashboard');
-  // greeting
-  const hr = new Date().getHours();
-  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
-  setEl('dashWelcome', greet + `, ${currentUser.displayName || currentBiz.name} — here's your overview`);
+  if (userRole === 'receptionist') {
+    showSection('rooms');
+  } else {
+    showSection('dashboard');
+    const hr = new Date().getHours();
+    const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+    setEl('dashWelcome', greet + `, ${currentUser.displayName || currentBiz.name} — here's your overview`);
+  }
 }
 
 function populateSidebar() {
@@ -903,9 +906,21 @@ function populateSidebar() {
   setEl('sbUserAvatar', nameInitial);
   setEl('sbUserName', currentUser.displayName || currentUser.email);
   setEl('sbUserRole', capitalize(userRole));
-  // hide users & profile tabs for non-owners/managers
-  if (userRole === 'receptionist' || userRole === 'housekeeping') {
-    document.getElementById('navUsers').style.display = 'none';
+
+  const isReceptionist = userRole === 'receptionist';
+  const hide = (id) => { const el=document.getElementById(id); if(el) el.style.display='none'; };
+  const show = (id) => { const el=document.getElementById(id); if(el) el.style.display=''; };
+
+  if (isReceptionist) {
+    // Receptionists: only Rooms, Bookings, Payments — no Dashboard, Staff, Profile
+    hide('navDashboard');
+    hide('navUsers');
+    hide('navProfile');
+    hide('navManagementLabel');
+    // Show their allowed sections
+    show('navRooms');
+    show('navBookings');
+    show('navPayments');
   }
 }
 
@@ -1264,6 +1279,17 @@ function renderPayments() {
 }
 
 // ===== USERS =====
+window.updateRoleInfo = (role) => {
+  const info = {
+    receptionist: '<i class="fas fa-door-open"></i> <strong>Receptionist access:</strong> Rooms, Bookings & Payments only. No access to Staff management or Business settings.',
+    manager: '<i class="fas fa-users-cog"></i> <strong>Manager access:</strong> Full access except Business Profile settings.',
+    accountant: '<i class="fas fa-file-invoice-dollar"></i> <strong>Accountant access:</strong> Payments and financial reports only.',
+    housekeeping: '<i class="fas fa-broom"></i> <strong>Housekeeping access:</strong> Rooms view only.'
+  };
+  const box = document.getElementById('roleInfoBox');
+  if (box) box.innerHTML = info[role] || '';
+};
+
 window.saveUser = async () => {
   const uName=v('uName'), uEmail=v('uEmail'), uPass=v('uPass'), uRole=v('uRole');
   if (!uName||!uEmail||!uPass) { toast('Fill all fields','error'); return; }
@@ -1297,6 +1323,7 @@ window.deleteUser = async (userId, userName) => {
 function renderUsers() {
   const grid = document.getElementById('usersGrid');
   const colors = {'owner':'#764ba2','manager':'#2756a6','receptionist':'#2d7a5e','accountant':'#c9a84c','housekeeping':'#c0392b'};
+  const accessLabel = {'owner':'Full Access','manager':'Full Access','receptionist':'Rooms · Bookings · Payments','accountant':'Payments Only','housekeeping':'Rooms Only'};
   if (!users.length) { grid.innerHTML='<p style="color:var(--ink-muted);padding:20px;">No staff yet</p>'; return; }
   grid.innerHTML = users.map(u => `
     <div class="user-card">
@@ -1305,9 +1332,10 @@ function renderUsers() {
         <div class="user-card-name">${u.name||u.email}</div>
         <div class="user-card-email">${u.email}</div>
         <span class="badge badge-gold" style="margin-top:6px;font-size:11px;">${capitalize(u.role)}</span>
+        <div style="font-size:11px;color:var(--ink-muted);margin-top:4px;"><i class="fas fa-key" style="margin-right:4px;"></i>${accessLabel[u.role]||'Limited Access'}</div>
       </div>
       <div class="user-card-actions">
-        ${u.uid!==currentUser.uid?`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteUser('${u.id}','${u.name||u.email}')"><i class="fas fa-trash"></i></button>`:''}
+        ${u.uid!==currentUser.uid?`<button class="btn btn-ghost btn-sm" style="color:var(--red)" title="Remove staff member" onclick="deleteUser('${u.id}','${u.name||u.email}')"><i class="fas fa-trash"></i></button>`:''}
       </div>
     </div>
   `).join('');
@@ -1389,6 +1417,10 @@ const sectionTitles = {
 };
 
 window.showSection = (name) => {
+  const receptionistAllowed = ['rooms','bookings','payments'];
+  if (userRole === 'receptionist' && !receptionistAllowed.includes(name)) {
+    toast('Access restricted — contact your manager','error'); return;
+  }
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById(name+'Section').classList.add('active');
