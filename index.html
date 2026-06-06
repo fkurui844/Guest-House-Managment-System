@@ -838,19 +838,29 @@ function bootFirebase(cfg) {
 async function handleAuthState(user) {
   if (!user) { showScreen('authScreen'); return; }
   currentUser = user;
-  // load user profile
-  const profSnap = await getDoc(doc(db,'userProfiles',user.uid));
-  if (!profSnap.exists()) { await doLogout(); return; }
-  const prof = profSnap.data();
-  bizId = prof.bizId;
-  userRole = prof.role;
+  try {
+    const profSnap = await getDoc(doc(db,'userProfiles',user.uid));
+    if (!profSnap.exists()) {
+      toast('Account profile not found — please register a business first','error');
+      await doLogout(); return;
+    }
+    const prof = profSnap.data();
+    bizId = prof.bizId;
+    userRole = prof.role;
 
-  // load business
-  const bizSnap = await getDoc(doc(db,'businesses',bizId));
-  if (!bizSnap.exists()) { await doLogout(); return; }
-  currentBiz = { id: bizId, ...bizSnap.data() };
+    const bizSnap = await getDoc(doc(db,'businesses',bizId));
+    if (!bizSnap.exists()) {
+      toast('Business record not found — please contact support','error');
+      await doLogout(); return;
+    }
+    currentBiz = { id: bizId, ...bizSnap.data() };
 
-  bootApp();
+    bootApp();
+  } catch(e) {
+    console.error('Auth state error:', e);
+    toast('Failed to load account: ' + (e.message||'permission denied') + ' — check Firestore rules','error');
+    showScreen('authScreen');
+  }
 }
 
 function bootApp() {
