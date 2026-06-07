@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StayDesk — Guest House Platform</title>
+<title>Guest House Management System — Professional Property Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -625,7 +625,7 @@ tbody tr:hover td{background:var(--surface2);}
 <!-- ===== FIREBASE SETUP SCREEN ===== -->
 <div id="setupScreen" class="setup-shell" style="display:none;">
   <div class="setup-card">
-    <div style="font-family:var(--font-display);font-size:32px;margin-bottom:4px;">Stay<span style="color:var(--gold);">Desk</span></div>
+    <div style="font-family:var(--font-display);font-size:32px;margin-bottom:4px;">Guest House <span style="color:var(--gold);">Management</span></div>
     <h2>Connect to Firebase</h2>
     <p>Paste your Firebase project config below. Each business gets their own isolated data in Firestore.</p>
 
@@ -682,7 +682,7 @@ service cloud.firestore {
 <!-- ===== AUTH SCREEN ===== -->
 <div id="authScreen" class="auth-shell" style="display:none;">
   <div class="auth-brand">
-    <div class="auth-brand-logo">Stay<span>Desk</span></div>
+    <div class="auth-brand-logo">Guest House<span> Management</span></div>
     <p>The all-in-one guest house platform built for hospitality businesses across Africa.</p>
     <div class="auth-brand-features">
       <div class="auth-feature"><i class="fas fa-building"></i> Multi-tenant business accounts</div>
@@ -721,7 +721,7 @@ service cloud.firestore {
     <div id="registerForm" style="display:none;">
       <div class="auth-panel-header">
         <h2>Register Your Business</h2>
-        <p>Create a free StayDesk account</p>
+        <p>Create a free Guest House Management System account</p>
       </div>
       <div class="form-group"><label>Business Name</label><input id="regBizName" placeholder="Grand Nairobi Guesthouse"></div>
       <div class="form-group"><label>Business Description</label><input id="regBizDesc" placeholder="Affordable comfort in the heart of the city"></div>
@@ -756,7 +756,7 @@ service cloud.firestore {
 <!-- ===== MAIN APP ===== -->
 <div id="mainApp" class="app-shell" style="display:none;">
   <div class="sidebar">
-    <div class="sidebar-brand">Stay<span style="color:var(--gold);">Desk</span></div>
+    <div class="sidebar-brand">Guest House <span style="color:var(--gold);">Management</span></div>
     <div class="sidebar-biz">
       <div class="sidebar-biz-label">Business</div>
       <div class="sidebar-biz-name" id="sbBizName">—</div>
@@ -1235,7 +1235,7 @@ service cloud.firestore {
         <div id="receiptCard" style="border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;">
           <!-- Receipt header -->
           <div style="background:var(--ink);padding:20px 24px;text-align:center;">
-            <div style="font-family:var(--font-display);font-size:22px;color:#fff;">Stay<span style="color:var(--gold);">Desk</span></div>
+            <div style="font-family:var(--font-display);font-size:22px;color:#fff;">Guest House <span style="color:var(--gold);">Management</span></div>
             <div id="rcptBizName" style="font-size:13px;color:rgba(255,255,255,.6);margin-top:3px;"></div>
             <div id="rcptBizPhone" style="font-size:12px;color:rgba(255,255,255,.4);"></div>
           </div>
@@ -1300,7 +1300,7 @@ service cloud.firestore {
           </div>
           <!-- Receipt footer -->
           <div style="background:var(--surface2);padding:10px 24px;text-align:center;border-top:1px solid var(--border);">
-            <div style="font-size:11px;color:var(--ink-muted);">Thank you for choosing <span id="rcptBizNameFooter"></span> · Powered by StayDesk</div>
+            <div style="font-size:11px;color:var(--ink-muted);">Thank you for choosing <span id="rcptBizNameFooter"></span> · Powered by Guest House Management System</div>
           </div>
         </div>
       </div>
@@ -1782,7 +1782,7 @@ window.doRegister = async () => {
     });
 
     clearTimeout(timeout);
-    toast(`Welcome to StayDesk, ${name}! 🎉`,'success');
+    toast(`Welcome to Guest House Management System, ${name}! 🎉`,'success');
   } catch(e) {
     clearTimeout(timeout);
     const msg = (e.code||'').includes('permission')
@@ -2045,7 +2045,7 @@ window.confirmBookingPayment = async () => {
 function showReceipt() {
   const { guestName, guestPhone, room, checkIn, checkOut, nights, amount, amountPaid,
     balance, cur, bookingRef, payRef, methodLabel } = _bData;
-  const bizName = currentBiz?.name || 'StayDesk Property';
+  const bizName = currentBiz?.name || 'My Guest House';
 
   document.getElementById('rcptBizName').textContent = bizName;
   document.getElementById('rcptBizPhone').textContent = currentBiz?.phone || '';
@@ -2103,7 +2103,7 @@ window.printReceipt = () => {
 window.copyReceiptText = () => {
   const { guestName, guestPhone, room, checkIn, checkOut, nights, amount, amountPaid,
     balance, cur, bookingRef, payRef, methodLabel } = _bData;
-  const bizName = currentBiz?.name || 'StayDesk Property';
+  const bizName = currentBiz?.name || 'My Guest House';
   const text = [
     `===== PAYMENT RECEIPT =====`,
     `${bizName}`,
@@ -2124,7 +2124,7 @@ window.copyReceiptText = () => {
     balance > 0 ? `Balance: ${cur} ${balance.toLocaleString()}` : 'PAID IN FULL',
     `──────────────────────────`,
     `Thank you for choosing ${bizName}`,
-    `Powered by StayDesk`
+    `Powered by Guest House Management System`
   ].filter(Boolean).join('\n');
   navigator.clipboard.writeText(text).then(() => toast('Receipt copied to clipboard','success'))
     .catch(() => toast('Could not copy','error'));
@@ -2594,7 +2594,7 @@ window.copyAllCredentials = () => {
   const pass = document.getElementById('successPass').textContent;
   const link = document.getElementById('successLink').value;
   const name = document.getElementById('successStaffName').textContent;
-  const text = `StayDesk Login Details\n──────────────────\n${name}\nEmail: ${email}\nPassword: ${pass}\nLogin Link: ${link}`;
+  const text = `Guest House Management System Login Details\n──────────────────\n${name}\nEmail: ${email}\nPassword: ${pass}\nLogin Link: ${link}`;
   navigator.clipboard.writeText(text).then(() => toast('Credentials copied to clipboard','success'))
     .catch(() => toast('Could not copy — please copy manually','error'));
 };
@@ -2604,7 +2604,7 @@ window.shareViaWhatsApp = () => {
   const pass = document.getElementById('successPass').textContent;
   const link = document.getElementById('successLink').value;
   const name = document.getElementById('successStaffName').textContent;
-  const msg = encodeURIComponent(`Hi! Your StayDesk account is ready.\n\n${name}\nEmail: ${email}\nPassword: ${pass}\nLogin: ${link}\n\nPlease change your password after first login.`);
+  const msg = encodeURIComponent(`Hi! Your Guest House Management System account is ready.\n\n${name}\nEmail: ${email}\nPassword: ${pass}\nLogin: ${link}\n\nPlease change your password after first login.`);
   window.open(`https://wa.me/?text=${msg}`, '_blank');
 };
 
