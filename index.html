@@ -1120,6 +1120,65 @@ service cloud.firestore {
   </div>
 </div>
 
+<!-- Unbook Room Modal -->
+<div id="unbookModal" class="modal-overlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <div>
+        <h3 style="color:var(--red);"><i class="fas fa-door-open" style="margin-right:8px;font-size:18px;"></i>Unbook Room</h3>
+        <p style="font-size:13px;color:var(--ink-muted);margin-top:4px;" id="unbookSubtitle">This will free up the room and cancel the booking.</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('unbookModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Booking summary -->
+      <div style="background:var(--red-light);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:20px;border-left:3px solid var(--red);">
+        <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;"><i class="fas fa-info-circle" style="margin-right:6px;"></i>Booking Details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;">Guest</div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink);" id="unbookGuestName">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;">Room</div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink);" id="unbookRoomNo">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;">Check-in</div>
+            <div style="font-size:13px;color:var(--ink-soft);" id="unbookCheckIn">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;">Status</div>
+            <div style="font-size:13px;color:var(--ink-soft);" id="unbookStatus">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reason (required for receptionist, optional for owner/manager) -->
+      <div id="unbookReasonWrap" class="form-group">
+        <label id="unbookReasonLabel">Reason for Unbooking <span id="unbookReasonRequired" style="color:var(--red);">*</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;" id="unbookReasonButtons">
+          <button class="btn btn-outline btn-sm" onclick="setUnbookReason('Room change request')" style="justify-content:flex-start;gap:8px;"><i class="fas fa-exchange-alt" style="color:var(--gold-dark);"></i> Room Change Request</button>
+          <button class="btn btn-outline btn-sm" onclick="setUnbookReason('Guest complaint')" style="justify-content:flex-start;gap:8px;"><i class="fas fa-exclamation-circle" style="color:var(--red);"></i> Guest Complaint</button>
+          <button class="btn btn-outline btn-sm" onclick="setUnbookReason('Maintenance issue')" style="justify-content:flex-start;gap:8px;"><i class="fas fa-wrench" style="color:var(--blue);"></i> Maintenance Issue</button>
+          <button class="btn btn-outline btn-sm" onclick="setUnbookReason('Guest request / cancellation')" style="justify-content:flex-start;gap:8px;"><i class="fas fa-user-times" style="color:var(--ink-muted);"></i> Guest Cancellation</button>
+        </div>
+        <textarea id="unbookReason" rows="2" placeholder="Describe the reason for unbooking this room..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;resize:none;font-family:var(--font-body);"></textarea>
+        <div class="form-hint" id="unbookReasonHint">Select a quick reason above or type a custom one.</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--ink-muted);">
+        <i class="fas fa-info-circle" style="margin-right:6px;color:var(--gold-dark);"></i>
+        The room will be set to <strong>Available</strong> and the booking marked as <strong>Cancelled</strong>.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('unbookModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmUnbookBtn" onclick="confirmUnbook()"><i class="fas fa-door-open"></i> Confirm Unbook</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
@@ -1770,6 +1829,98 @@ window.deleteBooking = async (bookingId, roomId) => {
   await updateBookingStatus(bookingId,'Cancelled',roomId);
 };
 
+// ===== UNBOOK ROOM =====
+let _unbookData = {};
+
+window.openUnbookModal = (bookingId, roomId, guestName, roomNo, checkIn, status) => {
+  _unbookData = { bookingId, roomId, guestName, roomNo, checkIn, status };
+
+  document.getElementById('unbookGuestName').textContent = guestName;
+  document.getElementById('unbookRoomNo').textContent = 'Room ' + roomNo;
+  document.getElementById('unbookCheckIn').textContent = checkIn;
+  document.getElementById('unbookStatus').innerHTML = status === 'Checked In'
+    ? '<span class="badge badge-success">Checked In</span>'
+    : '<span class="badge badge-info">Confirmed</span>';
+
+  const isOwnerOrManager = userRole === 'owner' || userRole === 'manager';
+  const reasonWrap = document.getElementById('unbookReasonWrap');
+  const reasonRequired = document.getElementById('unbookReasonRequired');
+  const reasonLabel = document.getElementById('unbookReasonLabel');
+  const hint = document.getElementById('unbookReasonHint');
+
+  if (isOwnerOrManager) {
+    reasonRequired.style.display = 'none';
+    reasonLabel.childNodes[0].textContent = 'Reason for Unbooking ';
+    hint.textContent = 'Optional — you may note a reason for record keeping.';
+  } else {
+    reasonRequired.style.display = 'inline';
+    hint.textContent = 'Required — select or type the reason for unbooking.';
+  }
+
+  // Set subtitle
+  document.getElementById('unbookSubtitle').textContent = status === 'Checked In'
+    ? 'Guest is currently checked in. This will check them out and free the room.'
+    : 'This will cancel the confirmed booking and free the room.';
+
+  document.getElementById('unbookReason').value = '';
+  // Reset quick-reason buttons
+  document.querySelectorAll('#unbookReasonButtons .btn').forEach(b => {
+    b.style.background = '';
+    b.style.borderColor = '';
+    b.style.color = '';
+  });
+
+  document.getElementById('unbookModal').classList.add('active');
+};
+
+window.setUnbookReason = (reason) => {
+  document.getElementById('unbookReason').value = reason;
+  document.querySelectorAll('#unbookReasonButtons .btn').forEach(b => {
+    const match = b.textContent.trim().includes(reason.split(' ')[0]);
+    b.style.background = match ? 'var(--red-light)' : '';
+    b.style.borderColor = match ? 'var(--red)' : '';
+    b.style.color = match ? 'var(--red)' : '';
+  });
+};
+
+window.confirmUnbook = async () => {
+  const reason = document.getElementById('unbookReason').value.trim();
+  const isOwnerOrManager = userRole === 'owner' || userRole === 'manager';
+
+  if (!isOwnerOrManager && !reason) {
+    toast('Please provide a reason for unbooking', 'error');
+    document.getElementById('unbookReason').focus();
+    return;
+  }
+
+  const btn = document.getElementById('confirmUnbookBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+  try {
+    const { bookingId, roomId, guestName, roomNo } = _unbookData;
+    const unbookedBy = currentUser.displayName || currentUser.email;
+    const timestamp = new Date().toISOString();
+
+    await updateDoc(doc(db, `businesses/${bizId}/bookings`, bookingId), {
+      status: 'Cancelled',
+      unbookedBy,
+      unbookedAt: serverTimestamp(),
+      unbookReason: reason || 'No reason provided',
+    });
+    await updateDoc(doc(db, `businesses/${bizId}/rooms`, roomId), { status: 'Available' });
+
+    toast(`Room ${roomNo} unbooked for ${guestName}`, 'success');
+    closeModal('unbookModal');
+    _unbookData = {};
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-door-open"></i> Confirm Unbook';
+  }
+};
+
 function renderBookings() {
   const tbody = document.getElementById('bookingsTable');
   const filter = document.getElementById('bookingFilter')?.value||'all';
@@ -1784,13 +1935,25 @@ function renderBookings() {
     'Confirmed':'badge-info','Checked In':'badge-success',
     'Checked Out':'badge-muted','Cancelled':'badge-danger'
   };
+  const isOwnerOrManager = userRole === 'owner' || userRole === 'manager';
+  const isReceptionist = userRole === 'receptionist';
+  const canUnbook = isOwnerOrManager || isReceptionist;
+
   tbody.innerHTML = list.map(b => {
     const badge = `<span class="badge ${statusBadgeMap[b.status]||'badge-muted'}">${b.status}</span>`;
-    const actions = b.status==='Confirmed'
-      ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Checked In','${b.roomId}')">Check In</button>`
-      : b.status==='Checked In'
-      ? `<button class="btn btn-outline btn-sm" onclick="updateBookingStatus('${b.id}','Checked Out','${b.roomId}')">Check Out</button>`
-      : '';
+    const canDoActions = b.status === 'Confirmed' || b.status === 'Checked In';
+
+    let actions = '';
+    if (b.status === 'Confirmed') {
+      actions += `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Checked In','${b.roomId}')">Check In</button>`;
+    } else if (b.status === 'Checked In') {
+      actions += `<button class="btn btn-outline btn-sm" onclick="updateBookingStatus('${b.id}','Checked Out','${b.roomId}')">Check Out</button>`;
+    }
+
+    if (canUnbook && canDoActions) {
+      actions += `<button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:1.5px solid var(--red);margin-left:2px;" title="Unbook this room" onclick="openUnbookModal('${b.id}','${b.roomId}','${b.guestName.replace(/'/g,"\\'")}','${b.roomNumber}','${b.checkIn}','${b.status}')"><i class="fas fa-door-open"></i> Unbook</button>`;
+    }
+
     return `<tr>
       <td><strong>${b.guestName}</strong></td>
       <td>${b.guestPhone||'—'}</td>
@@ -1799,7 +1962,7 @@ function renderBookings() {
       <td>${b.nights}</td>
       <td>${cur} ${(b.amount||0).toLocaleString()}</td>
       <td>${badge}</td>
-      <td><div style="display:flex;gap:6px;">${actions}${b.status!=='Cancelled'?`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteBooking('${b.id}','${b.roomId}')"><i class="fas fa-times"></i></button>`:''}</div></td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap;">${actions}${b.status!=='Cancelled'?`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteBooking('${b.id}','${b.roomId}')"><i class="fas fa-times"></i></button>`:''}</div></td>
     </tr>`;
   }).join('');
 }
