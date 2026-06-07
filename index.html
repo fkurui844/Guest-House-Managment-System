@@ -881,7 +881,10 @@ function bootFirebase(cfg) {
     auth = getAuth(app);
     db = getFirestore(app);
     showScreen("authScreen");
-    onAuthStateChanged(auth, handleAuthState);
+    // Sign out on every page load so refresh always returns to login
+    signOut(auth).finally(() => {
+      onAuthStateChanged(auth, handleAuthState);
+    });
   } catch(e) {
     showScreen('authScreen');
     toast('Firebase init failed: ' + e.message,'error');
