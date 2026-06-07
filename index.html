@@ -535,6 +535,86 @@ tbody tr:hover td{background:var(--surface2);}
     flex: 1;
   }
 }
+
+/* ===== STAFF PERFORMANCE ===== */
+.staff-perf-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.staff-perf-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.staff-perf-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--gold-dark);
+  font-size: 16px;
+}
+
+.staff-perf-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.staff-perf-role {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.staff-perf-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.staff-perf-stat {
+  background: var(--surface2);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.staff-perf-stat-label {
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.staff-perf-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: var(--font-display);
+}
+
+@media (max-width: 768px) {
+  .staff-perf-card {
+    padding: 14px 16px;
+  }
+
+  .staff-perf-stats {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 </head>
 <body>
@@ -755,6 +835,18 @@ service cloud.firestore {
         <div class="trend-chart-container" id="trendChartContainer" style="display:none;">
           <div class="trend-chart-title">Revenue Trend</div>
           <canvas id="trendChart" height="80"></canvas>
+        </div>
+
+        <!-- Staff Performance (NEW) -->
+        <div id="staffPerformanceContainer" style="display:none; margin-bottom:24px;">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--ink);">Staff Performance</h3>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:24px;" id="staffCardsGrid"></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Staff Member</th><th>Bookings</th><th>Revenue</th><th>Avg. per Booking</th><th>% of Total</th></tr></thead>
+              <tbody id="staffStatsTable"><tr class="empty-row"><td colspan="5">No staff data</td></tr></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="metrics-grid">
@@ -2672,6 +2764,9 @@ function updateDashboard() {
   
   // Update trend chart
   updateTrendChart(periodPayments);
+  
+  // Update staff performance
+  calculateStaffPerformance(periodPayments, periodBookings);
 }
 
 function updateTrendChart(periodPayments) {
@@ -2747,7 +2842,126 @@ function updateTrendChart(periodPayments) {
   });
 }
 
-// ===== PROFILE =====
+// ===== STAFF PERFORMANCE =====
+function calculateStaffPerformance(periodPayments, periodBookings) {
+  if (!users || users.length === 0) {
+    document.getElementById('staffPerformanceContainer').style.display = 'none';
+    return;
+  }
+  
+  const staffStats = {};
+  
+  // Initialize staff members
+  users.forEach(u => {
+    if (u.uid) {
+      staffStats[u.uid] = {
+        uid: u.uid,
+        name: u.name || u.email || 'Unknown',
+        email: u.email,
+        role: u.role,
+        bookings: 0,
+        revenue: 0,
+        payments: 0
+      };
+    }
+  });
+  
+  // Count bookings and assign to createdBy staff
+  periodBookings.forEach(b => {
+    if (b.createdBy) {
+      const userId = Object.keys(staffStats).find(uid => 
+        staffStats[uid].email === b.createdBy || staffStats[uid].name === b.createdBy
+      );
+      if (userId) {
+        staffStats[userId].bookings += 1;
+      }
+    }
+  });
+  
+  // Sum revenue by processedBy staff
+  periodPayments.forEach(p => {
+    if (p.processedBy) {
+      const userId = Object.keys(staffStats).find(uid => 
+        staffStats[uid].email === p.processedBy || staffStats[uid].name === p.processedBy
+      );
+      if (userId) {
+        staffStats[userId].revenue += (p.amount || 0);
+        staffStats[userId].payments += 1;
+      }
+    }
+  });
+  
+  // Convert to array and filter out staff with no activity
+  const staffArray = Object.values(staffStats).filter(s => s.bookings > 0 || s.revenue > 0);
+  
+  // Only show if there's more than one staff with activity
+  if (staffArray.length <= 1) {
+    document.getElementById('staffPerformanceContainer').style.display = 'none';
+    return;
+  }
+  
+  document.getElementById('staffPerformanceContainer').style.display = 'block';
+  
+  // Calculate totals
+  const totalRevenue = staffArray.reduce((sum, s) => sum + s.revenue, 0);
+  
+  // Render staff cards
+  const cardsGrid = document.getElementById('staffCardsGrid');
+  cardsGrid.innerHTML = staffArray.map(s => {
+    const initials = (s.name || 'S')[0].toUpperCase() + ((s.name || '').split(' ')[1] || '')[0].toUpperCase();
+    const avgPerBooking = s.bookings > 0 ? Math.round(s.revenue / s.bookings) : 0;
+    const percentOfTotal = totalRevenue > 0 ? Math.round(s.revenue / totalRevenue * 100) : 0;
+    const cur = currentBiz?.currency || 'KES';
+    
+    return `
+      <div class="staff-perf-card">
+        <div class="staff-perf-header">
+          <div class="staff-perf-avatar">${initials}</div>
+          <div>
+            <p class="staff-perf-name">${s.name}</p>
+            <p class="staff-perf-role">${capitalize(s.role || 'Staff')}</p>
+          </div>
+        </div>
+        <div class="staff-perf-stats">
+          <div class="staff-perf-stat">
+            <div class="staff-perf-stat-label">Bookings</div>
+            <div class="staff-perf-stat-value">${s.bookings}</div>
+          </div>
+          <div class="staff-perf-stat">
+            <div class="staff-perf-stat-label">Revenue</div>
+            <div class="staff-perf-stat-value">${cur} ${s.revenue.toLocaleString()}</div>
+          </div>
+          <div class="staff-perf-stat">
+            <div class="staff-perf-stat-label">Avg per Booking</div>
+            <div class="staff-perf-stat-value">${cur} ${avgPerBooking.toLocaleString()}</div>
+          </div>
+          <div class="staff-perf-stat">
+            <div class="staff-perf-stat-label">% of Total</div>
+            <div class="staff-perf-stat-value">${percentOfTotal}%</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Render staff table
+  const tbody = document.getElementById('staffStatsTable');
+  tbody.innerHTML = staffArray.map(s => {
+    const avgPerBooking = s.bookings > 0 ? Math.round(s.revenue / s.bookings) : 0;
+    const percentOfTotal = totalRevenue > 0 ? Math.round(s.revenue / totalRevenue * 100) : 0;
+    const cur = currentBiz?.currency || 'KES';
+    
+    return `<tr>
+      <td><strong>${s.name}</strong><br><small style="color:var(--ink-muted);">${capitalize(s.role || 'Staff')}</small></td>
+      <td>${s.bookings}</td>
+      <td><strong>${cur} ${s.revenue.toLocaleString()}</strong></td>
+      <td>${cur} ${avgPerBooking.toLocaleString()}</td>
+      <td><span style="font-weight:600;color:var(--gold-dark);">${percentOfTotal}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+
 function loadProfileSection() {
   if (!currentBiz) return;
   const b = currentBiz;
