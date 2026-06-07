@@ -1940,8 +1940,10 @@ window.saveBooking = () => {};
 window.updateBookingStatus = async (bookingId, status, roomId) => {
   const updates = {status};
   await updateDoc(doc(db,`businesses/${bizId}/bookings`,bookingId), updates);
-  if (status==='Checked Out'||status==='Cancelled') {
-    await updateDoc(doc(db,`businesses/${bizId}/rooms`,roomId),{status:'Available'});
+  if (status === 'Checked In') {
+    await updateDoc(doc(db,`businesses/${bizId}/rooms`,roomId), {status:'Occupied'});
+  } else if (status === 'Checked Out' || status === 'Cancelled') {
+    await updateDoc(doc(db,`businesses/${bizId}/rooms`,roomId), {status:'Available'});
   }
   toast('Booking updated to '+status,'success');
 };
@@ -2022,8 +2024,15 @@ window.confirmUnbook = async () => {
   try {
     const { bookingId, roomId, guestName, roomNo } = _unbookData;
     const unbookedBy = currentUser.displayName || currentUser.email;
-    const timestamp = new Date().toISOString();
 
+    // Optimistic local update — UI reflects change immediately
+    const roomIdx = rooms.findIndex(r => r.id === roomId);
+    if (roomIdx !== -1) rooms[roomIdx].status = 'Available';
+    const bookingIdx = bookings.findIndex(b => b.id === bookingId);
+    if (bookingIdx !== -1) bookings[bookingIdx].status = 'Cancelled';
+    renderRooms(); renderBookings(); updateDashboard();
+
+    // Persist to Firestore
     await updateDoc(doc(db, `businesses/${bizId}/bookings`, bookingId), {
       status: 'Cancelled',
       unbookedBy,
@@ -2032,7 +2041,7 @@ window.confirmUnbook = async () => {
     });
     await updateDoc(doc(db, `businesses/${bizId}/rooms`, roomId), { status: 'Available' });
 
-    toast(`Room ${roomNo} unbooked for ${guestName}`, 'success');
+    toast(`Room ${roomNo} is now Available`, 'success');
     closeModal('unbookModal');
     _unbookData = {};
   } catch(e) {
