@@ -326,23 +326,115 @@ tbody tr:hover td{background:var(--surface2);}
 }
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ===== MOBILE BOTTOM NAV ===== */
+.mobile-bottom-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;
+  background:var(--ink);border-top:1px solid rgba(255,255,255,.1);
+  padding:0;padding-bottom:env(safe-area-inset-bottom);
+}
+.mobile-bottom-nav-inner{
+  display:flex;align-items:stretch;
+}
+.mobile-nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;padding:10px 4px 8px;color:rgba(255,255,255,.45);
+  cursor:pointer;font-size:10px;font-weight:600;border:none;background:none;
+  transition:color .2s;letter-spacing:.02em;min-width:0;
+}
+.mobile-nav-item i{font-size:18px;line-height:1;}
+.mobile-nav-item.active{color:var(--gold);}
+.mobile-nav-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+
+/* Mobile top bar user info */
+.mobile-user-bar{
+  display:none;background:var(--ink);padding:10px 16px;
+  flex-direction:row;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1);
+}
+.mobile-user-bar .sidebar-avatar{width:30px;height:30px;font-size:12px;flex-shrink:0;}
+.mobile-user-bar-info{flex:1;min-width:0;}
+.mobile-user-bar-name{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mobile-user-bar-role{font-size:11px;color:rgba(255,255,255,.4);}
+.mobile-user-bar-biz{font-size:11px;color:var(--gold);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* Card-style rows for mobile tables */
+.mobile-card-list{display:none;flex-direction:column;gap:10px;}
+.mobile-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;display:flex;flex-direction:column;gap:8px;
+}
+.mobile-card-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.mobile-card-title{font-weight:700;font-size:14px;color:var(--ink);}
+.mobile-card-sub{font-size:12px;color:var(--ink-muted);}
+.mobile-card-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;}
+.mobile-card-label{color:var(--ink-muted);font-size:12px;font-weight:600;white-space:nowrap;}
+.mobile-card-value{color:var(--ink-soft);text-align:right;font-size:13px;}
+.mobile-card-actions{display:flex;gap:6px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--border);}
+.mobile-card-actions .btn{flex:1;min-width:0;font-size:12px;padding:8px 10px;}
+
 /* ===== RESPONSIVE ===== */
 @media(max-width:900px){
   .auth-brand{display:none;}
   .auth-panel{width:100%;}
   .sidebar{width:200px;}
 }
+
 @media(max-width:700px){
+  /* Layout */
   .app-shell{flex-direction:column;}
-  .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;}
-  .sidebar-brand,.sidebar-biz,.sidebar-bottom{display:none;}
-  .sidebar-nav{display:flex;padding:0;overflow-x:auto;width:100%;}
-  .nav-section-label{display:none;}
-  .nav-item{flex-direction:column;gap:4px;font-size:10px;padding:10px 14px;border-left:none;border-bottom:2px solid transparent;}
-  .nav-item.active{border-bottom-color:var(--gold);border-left:none;}
-  .content-area{padding:16px;}
+  .sidebar{display:none;}
+  .main-content{padding-bottom:60px;}
+  .content-area{padding:14px;}
+  .top-bar{padding:0 14px;height:54px;}
+  .top-bar-title{font-size:16px;}
+
+  /* Show mobile UI */
+  .mobile-bottom-nav{display:flex;flex-direction:column;}
+  .mobile-user-bar{display:flex;}
+
+  /* Forms */
   .form-row{grid-template-columns:1fr;}
-  .metrics-grid{grid-template-columns:1fr 1fr;}
+  .modal{max-width:100%!important;margin:0;border-radius:var(--radius) var(--radius) 0 0;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .modal-body{padding:18px 16px;}
+  .modal-head{padding:18px 16px 14px;}
+  .modal-footer{padding:12px 16px 20px;flex-wrap:wrap;}
+  .modal-footer .btn{flex:1;min-width:120px;}
+
+  /* Metrics */
+  .metrics-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+  .metric-card{padding:14px 16px;}
+  .metric-value{font-size:24px;}
+
+  /* Tables → hide on mobile, show cards */
+  .table-wrap table{display:none;}
+  .mobile-card-list{display:flex;}
+
+  /* Page headers */
+  .page-header{margin-bottom:16px;}
+  .page-header h1{font-size:22px;}
+  .section-actions{margin-bottom:16px;gap:8px;}
+
+  /* Auth */
+  .auth-panel{width:100%;padding:36px 24px;}
+
+  /* Profile grid */
+  #profileFields{grid-template-columns:1fr!important;}
+
+  /* Booking step indicators */
+  #bookingStepIndicator{font-size:10px;gap:4px;}
+  .bstep{font-size:10px;padding:2px 8px;}
+
+  /* Unbook button compact */
+  .btn-sm{font-size:12px;padding:6px 10px;}
+
+  /* Sync badge text hidden on mobile */
+  .sync-badge span{display:none;}
+
+  /* Users grid */
+  .users-grid{grid-template-columns:1fr;}
+
+  /* Staff dashboard room grid */
+  #sdRoomGrid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))!important;}
 }
 </style>
 </head>
@@ -513,6 +605,20 @@ service cloud.firestore {
     </div>
   </div>
 
+  <!-- Mobile Top User Bar (shown only on mobile) -->
+  <div class="mobile-user-bar" id="mobileUserBar">
+    <div class="sidebar-avatar" id="mobileUserAvatar">U</div>
+    <div class="mobile-user-bar-info">
+      <div class="mobile-user-bar-name" id="mobileUserName">—</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span class="mobile-user-bar-role" id="mobileUserRole">—</span>
+        <span style="color:rgba(255,255,255,.2);font-size:10px;">·</span>
+        <span class="mobile-user-bar-biz" id="mobileUserBiz">—</span>
+      </div>
+    </div>
+    <button onclick="doLogout()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer;padding:6px;flex-shrink:0;" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+  </div>
+
   <div class="main-content">
     <div class="top-bar">
       <div class="top-bar-title" id="topBarTitle">Dashboard</div>
@@ -577,6 +683,7 @@ service cloud.firestore {
             <tbody id="roomsTable"><tr class="empty-row"><td colspan="6"><div class="loading-spinner"><div class="spinner"></div>Loading rooms...</div></td></tr></tbody>
           </table>
         </div>
+        <div class="mobile-card-list" id="roomsCardList"><div class="loading-spinner"><div class="spinner"></div>Loading rooms...</div></div>
       </div>
 
       <!-- STAFF DASHBOARD -->
@@ -659,6 +766,7 @@ service cloud.firestore {
             <tbody id="bookingsTable"><tr class="empty-row"><td colspan="9"><div class="loading-spinner"><div class="spinner"></div>Loading bookings...</div></td></tr></tbody>
           </table>
         </div>
+        <div class="mobile-card-list" id="bookingsCardList"><div class="loading-spinner"><div class="spinner"></div>Loading bookings...</div></div>
       </div>
 
       <!-- PAYMENTS -->
@@ -673,6 +781,7 @@ service cloud.firestore {
             <tbody id="paymentsTable"><tr class="empty-row"><td colspan="7"><div class="loading-spinner"><div class="spinner"></div>Loading payments...</div></td></tr></tbody>
           </table>
         </div>
+        <div class="mobile-card-list" id="paymentsCardList"><div class="loading-spinner"><div class="spinner"></div>Loading payments...</div></div>
       </div>
 
       <!-- USERS -->
@@ -709,7 +818,15 @@ service cloud.firestore {
 
     </div>
   </div>
-</div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <div class="mobile-bottom-nav-inner" id="mobileNavInner">
+      <!-- items injected by JS based on role -->
+    </div>
+  </nav>
+
+</div><!-- end mainApp -->
 
 <!-- ===== MODALS ===== -->
 
@@ -1309,6 +1426,10 @@ function populateSidebar() {
   setEl('sbUserName', currentUser.displayName || currentUser.email);
   setEl('sbUserRole', capitalize(userRole));
 
+  // Mobile nav & user bar
+  buildMobileNav();
+  syncMobileUserBar();
+
   const isStaff = userRole !== 'owner' && userRole !== 'manager';
   const hide = (id) => { const el=document.getElementById(id); if(el) el.style.display='none'; };
 
@@ -1524,6 +1645,7 @@ function renderRooms() {
   }).join('');
   // Also refresh staff dashboard room grid if visible
   if (userRole !== 'owner' && userRole !== 'manager') updateStaffDashboard();
+  renderRoomsMobileCards();
 }
 
 // ===== BOOKINGS =====
@@ -1965,6 +2087,7 @@ function renderBookings() {
       <td><div style="display:flex;gap:6px;flex-wrap:wrap;">${actions}${b.status!=='Cancelled'?`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteBooking('${b.id}','${b.roomId}')"><i class="fas fa-times"></i></button>`:''}</div></td>
     </tr>`;
   }).join('');
+  renderBookingsMobileCards();
 }
 
 function renderDashBookings() {
@@ -2023,6 +2146,7 @@ function renderPayments() {
       <td><button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deletePayment('${p.id}')"><i class="fas fa-trash"></i></button></td>
     </tr>`;
   }).join('');
+  renderPaymentsMobileCards();
 }
 
 // ===== STAFF DASHBOARD =====
@@ -2321,6 +2445,7 @@ window.showSection = (name) => {
   setEl('topBarTitle', sectionTitles[name]||name);
   if (name==='profile') loadProfileSection();
   if (name==='staffDash') updateStaffDashboard();
+  updateMobileNavActive(name);
 };
 
 // ===== MODALS =====
@@ -2358,7 +2483,161 @@ window.toast = (msg, type='success') => {
   setTimeout(()=>div.remove(), 3500);
 };
 
-// ===== PAYMENT METHOD SELECTOR (Step 1) =====
+// ===== MOBILE NAV =====
+function buildMobileNav() {
+  const isOwnerManager = userRole === 'owner' || userRole === 'manager';
+  const isStaff = !isOwnerManager;
+  const navInner = document.getElementById('mobileNavInner');
+  if (!navInner) return;
+
+  const allItems = [
+    { section: isStaff ? 'staffDash' : 'dashboard', icon: 'fas fa-chart-pie', label: 'Dashboard' },
+    { section: 'rooms',    icon: 'fas fa-door-open',      label: 'Rooms' },
+    { section: 'bookings', icon: 'fas fa-calendar-check', label: 'Bookings' },
+    { section: 'payments', icon: 'fas fa-credit-card',    label: 'Payments' },
+    { section: 'users',    icon: 'fas fa-users',          label: 'Staff',    ownerOnly: true },
+    { section: 'profile',  icon: 'fas fa-building',       label: 'Profile',  ownerOnly: true },
+  ];
+
+  const items = allItems.filter(i => !i.ownerOnly || isOwnerManager);
+  navInner.innerHTML = items.map(i => `
+    <button class="mobile-nav-item" onclick="showSection('${i.section}')" data-mobile-section="${i.section}">
+      <i class="${i.icon}"></i>
+      <span>${i.label}</span>
+    </button>
+  `).join('');
+}
+
+function updateMobileNavActive(sectionName) {
+  document.querySelectorAll('.mobile-nav-item').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('data-mobile-section') === sectionName);
+  });
+}
+
+function syncMobileUserBar() {
+  const name = currentUser?.displayName || currentUser?.email || '—';
+  const initial = name[0].toUpperCase();
+  setEl('mobileUserName', name);
+  setEl('mobileUserRole', capitalize(userRole||''));
+  setEl('mobileUserBiz', currentBiz?.name || '—');
+  const av = document.getElementById('mobileUserAvatar');
+  if (av) av.textContent = initial;
+}
+
+// ===== MOBILE CARD RENDERS =====
+function renderRoomsMobileCards() {
+  const list = document.getElementById('roomsCardList');
+  if (!list) return;
+  const cur = currentBiz?.currency || 'KES';
+  const isOwnerManager = userRole === 'owner' || userRole === 'manager';
+  if (!rooms.length) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-muted);"><i class="fas fa-door-open" style="font-size:28px;opacity:.3;display:block;margin-bottom:8px;"></i>No rooms yet</div>';
+    return;
+  }
+  list.innerHTML = rooms.map(r => {
+    const statusBadge = r.status === 'Available'
+      ? `<span class="badge badge-success"><i class="fas fa-circle" style="font-size:8px"></i> Available</span>`
+      : r.status === 'Occupied'
+      ? `<span class="badge badge-danger"><i class="fas fa-circle" style="font-size:8px"></i> Occupied</span>`
+      : `<span class="badge badge-muted"><i class="fas fa-wrench" style="font-size:8px"></i> Maintenance</span>`;
+    const actions = isOwnerManager ? `
+      <div class="mobile-card-actions">
+        ${r.status !== 'Occupied' ? `<button class="btn btn-outline btn-sm" onclick="toggleRoomStatus('${r.id}','${r.status}')"><i class="fas fa-sync-alt"></i> Toggle Status</button>` : ''}
+        <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:1.5px solid var(--red);" onclick="deleteRoom('${r.id}','${r.roomNumber}')"><i class="fas fa-trash"></i> Delete</button>
+      </div>` : '';
+    return `<div class="mobile-card">
+      <div class="mobile-card-header">
+        <div>
+          <div class="mobile-card-title">Room ${r.roomNumber}</div>
+          <div class="mobile-card-sub">${r.type}${r.floor ? ' · ' + r.floor : ''}</div>
+        </div>
+        ${statusBadge}
+      </div>
+      ${isOwnerManager ? `<div class="mobile-card-row"><span class="mobile-card-label">Price/Night</span><span class="mobile-card-value" style="font-weight:700;color:var(--gold-dark);">${cur} ${(r.price||0).toLocaleString()}</span></div>` : ''}
+      ${r.amenities ? `<div class="mobile-card-row"><span class="mobile-card-label">Amenities</span><span class="mobile-card-value" style="font-size:12px;">${r.amenities}</span></div>` : ''}
+      ${actions}
+    </div>`;
+  }).join('');
+}
+
+function renderBookingsMobileCards() {
+  const list = document.getElementById('bookingsCardList');
+  if (!list) return;
+  const filter = document.getElementById('bookingFilter')?.value || 'all';
+  const cur = currentBiz?.currency || 'KES';
+  let bookingList = filter === 'all' ? bookings : bookings.filter(b => b.status === filter);
+  const isOwnerManager = userRole === 'owner' || userRole === 'manager';
+  const isReceptionist = userRole === 'receptionist';
+  const canUnbook = isOwnerManager || isReceptionist;
+
+  if (!bookingList.length) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-muted);"><i class="fas fa-calendar" style="font-size:28px;opacity:.3;display:block;margin-bottom:8px;"></i>No bookings found</div>';
+    return;
+  }
+  const statusBadgeMap = { 'Confirmed':'badge-info','Checked In':'badge-success','Checked Out':'badge-muted','Cancelled':'badge-danger' };
+  list.innerHTML = bookingList.map(b => {
+    const badge = `<span class="badge ${statusBadgeMap[b.status]||'badge-muted'}">${b.status}</span>`;
+    const canDoActions = b.status === 'Confirmed' || b.status === 'Checked In';
+    let actionBtns = '';
+    if (b.status === 'Confirmed') actionBtns += `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Checked In','${b.roomId}')"><i class="fas fa-sign-in-alt"></i> Check In</button>`;
+    if (b.status === 'Checked In') actionBtns += `<button class="btn btn-outline btn-sm" onclick="updateBookingStatus('${b.id}','Checked Out','${b.roomId}')"><i class="fas fa-sign-out-alt"></i> Check Out</button>`;
+    if (canUnbook && canDoActions) actionBtns += `<button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:1.5px solid var(--red);" onclick="openUnbookModal('${b.id}','${b.roomId}','${b.guestName.replace(/'/g,"\\'")}','${b.roomNumber}','${b.checkIn}','${b.status}')"><i class="fas fa-door-open"></i> Unbook</button>`;
+    if (b.status !== 'Cancelled') actionBtns += `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteBooking('${b.id}','${b.roomId}')"><i class="fas fa-times"></i></button>`;
+    return `<div class="mobile-card">
+      <div class="mobile-card-header">
+        <div>
+          <div class="mobile-card-title">${b.guestName}</div>
+          <div class="mobile-card-sub">${b.guestPhone || ''}</div>
+        </div>
+        ${badge}
+      </div>
+      <div class="mobile-card-row"><span class="mobile-card-label">Room</span><span class="mobile-card-value"><span class="badge badge-gold">${b.roomNumber}</span></span></div>
+      <div class="mobile-card-row"><span class="mobile-card-label">Check-in</span><span class="mobile-card-value">${b.checkIn}</span></div>
+      <div class="mobile-card-row"><span class="mobile-card-label">Check-out</span><span class="mobile-card-value">${b.checkOut}</span></div>
+      <div class="mobile-card-row"><span class="mobile-card-label">Nights</span><span class="mobile-card-value">${b.nights}</span></div>
+      <div class="mobile-card-row"><span class="mobile-card-label">Amount</span><span class="mobile-card-value" style="font-weight:700;color:var(--gold-dark);">${cur} ${(b.amount||0).toLocaleString()}</span></div>
+      ${actionBtns ? `<div class="mobile-card-actions">${actionBtns}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderPaymentsMobileCards() {
+  const list = document.getElementById('paymentsCardList');
+  if (!list) return;
+  const cur = currentBiz?.currency || 'KES';
+  if (!payments.length) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-muted);"><i class="fas fa-credit-card" style="font-size:28px;opacity:.3;display:block;margin-bottom:8px;"></i>No payments yet</div>';
+    return;
+  }
+  const methodIcon = { Cash:'fa-money-bill','M-Pesa':'fa-mobile-alt','Bank Transfer':'fa-university',Card:'fa-credit-card',Cheque:'fa-file-alt' };
+  list.innerHTML = payments.map(p => {
+    const d = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleDateString() : '—';
+    const icon = methodIcon[p.method] || 'fa-coins';
+    return `<div class="mobile-card">
+      <div class="mobile-card-header">
+        <div>
+          <div class="mobile-card-title">${p.guestName}</div>
+          <div class="mobile-card-sub">${d}</div>
+        </div>
+        <div style="font-family:var(--font-display);font-size:18px;color:var(--gold-dark);font-weight:700;">${cur} ${(p.amount||0).toLocaleString()}</div>
+      </div>
+      <div class="mobile-card-row"><span class="mobile-card-label">Method</span><span class="mobile-card-value"><i class="fas ${icon}" style="margin-right:5px;color:var(--gold-dark);"></i>${p.method}</span></div>
+      ${p.reference ? `<div class="mobile-card-row"><span class="mobile-card-label">Reference</span><span class="mobile-card-value" style="font-family:monospace;font-size:12px;">${p.reference}</span></div>` : ''}
+      <div class="mobile-card-row"><span class="mobile-card-label">Processed By</span><span class="mobile-card-value">${p.processedBy||'—'}</span></div>
+      <div class="mobile-card-actions">
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deletePayment('${p.id}')"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAllMobileCards() {
+  renderRoomsMobileCards();
+  renderBookingsMobileCards();
+  renderPaymentsMobileCards();
+}
+
+// ===== MOBILE NAV =====
 let selectedPayMethod = 'mpesa';
 
 window.selectPaymentMethod = (method) => {
