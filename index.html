@@ -665,8 +665,8 @@ service cloud.firestore {
         <h3 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--ink);">Recent Bookings</h3>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Amount</th><th>Status</th></tr></thead>
-            <tbody id="dashBookingsTable"><tr class="empty-row"><td colspan="6"><i class="fas fa-calendar"></i>No bookings yet</td></tr></tbody>
+            <thead><tr><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Amount</th><th>Status</th><th>Reason / Action</th></tr></thead>
+            <tbody id="dashBookingsTable"><tr class="empty-row"><td colspan="7"><i class="fas fa-calendar"></i>No bookings yet</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1950,7 +1950,16 @@ window.updateBookingStatus = async (bookingId, status, roomId) => {
 
 window.deleteBooking = async (bookingId, roomId) => {
   if (!confirm('Cancel this booking?')) return;
-  await updateBookingStatus(bookingId,'Cancelled',roomId);
+  try {
+    await updateDoc(doc(db, `businesses/${bizId}/bookings`, bookingId), {
+      status: 'Cancelled',
+      unbookReason: 'Manually cancelled',
+      unbookedBy: currentUser.displayName || currentUser.email,
+      unbookedAt: serverTimestamp(),
+    });
+    await updateDoc(doc(db, `businesses/${bizId}/rooms`, roomId), { status: 'Available' });
+    toast('Booking cancelled', 'success');
+  } catch(e) { toast(e.message, 'error'); }
 };
 
 // ===== UNBOOK ROOM =====
@@ -2103,14 +2112,62 @@ function renderDashBookings() {
   const tbody = document.getElementById('dashBookingsTable');
   const cur = currentBiz?.currency||'KES';
   const recent = bookings.slice(0,6);
-  if (!recent.length) { tbody.innerHTML=`<tr class="empty-row"><td colspan="6"><i class="fas fa-calendar"></i>No bookings yet</td></tr>`; return; }
-  tbody.innerHTML = recent.map(b=>`<tr>
-    <td><strong>${b.guestName}</strong></td>
-    <td><span class="badge badge-gold">${b.roomNumber}</span></td>
-    <td>${b.checkIn}</td><td>${b.checkOut}</td>
-    <td>${cur} ${(b.amount||0).toLocaleString()}</td>
-    <td><span class="badge ${b.status==='Confirmed'?'badge-info':b.status==='Checked In'?'badge-success':b.status==='Checked Out'?'badge-muted':'badge-danger'}">${b.status}</span></td>
-  </tr>`).join('');
+  if (!recent.length) { tbody.innerHTML=`<tr class="empty-row"><td colspan="7"><i class="fas fa-calendar"></i>No bookings yet</td></tr>`; return; }
+
+  const statusClass = {
+    'Confirmed':'badge-info','Checked In':'badge-success',
+    'Checked Out':'badge-muted','Cancelled':'badge-danger'
+  };
+
+  tbody.innerHTML = recent.map(b => {
+    const badge = `<span class="badge ${statusClass[b.status]||'badge-muted'}">${b.status}</span>`;
+
+    let reasonCell = '<span style="color:var(--ink-muted);font-size:12px;">—</span>';
+
+    if (b.status === 'Cancelled' && b.unbookReason) {
+      // Unbooked with a reason recorded
+      const byLine = b.unbookedBy ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:3px;"><i class="fas fa-user" style="margin-right:3px;"></i>${b.unbookedBy}</div>` : '';
+      reasonCell = `
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span style="background:var(--red-light);color:var(--red);font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;">
+              <i class="fas fa-door-open" style="margin-right:3px;"></i>Room Unbooked
+            </span>
+          </div>
+          <div style="font-size:12px;color:var(--ink-soft);max-width:200px;">${b.unbookReason}</div>
+          ${byLine}
+        </div>`;
+    } else if (b.status === 'Cancelled') {
+      reasonCell = `
+        <span style="background:var(--red-light);color:var(--red);font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;">
+          <i class="fas fa-times-circle" style="margin-right:3px;"></i>Booking Cancelled
+        </span>`;
+    } else if (b.status === 'Checked Out') {
+      reasonCell = `
+        <span style="background:var(--green-light);color:var(--green);font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;">
+          <i class="fas fa-check-circle" style="margin-right:3px;"></i>Checked Out Successfully
+        </span>`;
+    } else if (b.status === 'Checked In') {
+      reasonCell = `
+        <span style="background:var(--green-light);color:var(--green);font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;">
+          <i class="fas fa-sign-in-alt" style="margin-right:3px;"></i>Guest In Room
+        </span>`;
+    } else if (b.status === 'Confirmed') {
+      reasonCell = `
+        <span style="background:var(--blue-light);color:var(--blue);font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;">
+          <i class="fas fa-calendar-check" style="margin-right:3px;"></i>Awaiting Check-in
+        </span>`;
+    }
+
+    return `<tr>
+      <td><strong>${b.guestName}</strong></td>
+      <td><span class="badge badge-gold">${b.roomNumber}</span></td>
+      <td>${b.checkIn}</td><td>${b.checkOut}</td>
+      <td>${cur} ${(b.amount||0).toLocaleString()}</td>
+      <td>${badge}</td>
+      <td>${reasonCell}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ===== PAYMENTS =====
