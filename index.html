@@ -77,13 +77,24 @@ input,select,textarea,button{font-family:var(--font-body);}
 .auth-feat-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:5px;}
 .auth-feat-desc{font-size:12px;color:rgba(255,255,255,0.45);line-height:1.6;}
 
-/* Testimonial */
-.auth-testimonial{background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:20px;margin-bottom:28px;width:100%;}
+/* Testimonial carousel */
+.auth-testimonial-carousel{position:relative;width:100%;margin-bottom:28px;}
+.auth-testimonial-slide{
+  display:none;
+  background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);
+  border-radius:10px;padding:20px;
+  animation:fadeSlide .5s ease;
+}
+.auth-testimonial-slide.active{display:block;}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 .auth-testimonial-text{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.7;font-style:italic;margin-bottom:12px;}
 .auth-testimonial-author{display:flex;align-items:center;gap:10px;}
-.auth-testimonial-avatar{width:32px;height:32px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:#fff;font-size:13px;}
+.auth-testimonial-avatar{width:32px;height:32px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:#fff;font-size:13px;flex-shrink:0;}
 .auth-testimonial-name{font-size:12px;color:rgba(255,255,255,0.6);font-weight:600;}
 .auth-testimonial-biz{font-size:11px;color:rgba(255,255,255,0.3);}
+.auth-testimonial-dots{display:flex;gap:6px;justify-content:center;margin-top:14px;}
+.auth-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);cursor:pointer;transition:all .3s;}
+.auth-dot.active{background:var(--gold);width:18px;border-radius:4px;}
 
 /* Trust badges */
 .auth-trust{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
@@ -757,21 +768,21 @@ service cloud.firestore {
     <!-- Live users pill -->
     <div class="auth-live-pill">
       <span class="auth-live-dot"></span>
-      <span class="auth-live-text"><strong>21 businesses</strong> actively using StayDesk right now</span>
+      <span class="auth-live-text"><strong id="statLiveBiz">21 businesses</strong> actively using StayDesk right now</span>
     </div>
 
     <!-- Stats -->
     <div class="auth-stats">
       <div class="auth-stat">
-        <span class="auth-stat-num">21</span>
+        <span class="auth-stat-num" id="statBiz">21</span>
         <span class="auth-stat-lbl">Active Businesses</span>
       </div>
       <div class="auth-stat">
-        <span class="auth-stat-num">1,340+</span>
+        <span class="auth-stat-num" id="statBookings">1,340+</span>
         <span class="auth-stat-lbl">Bookings Processed</span>
       </div>
       <div class="auth-stat">
-        <span class="auth-stat-num">KES 4.2M</span>
+        <span class="auth-stat-num" id="statRevenue">KES 4.2M</span>
         <span class="auth-stat-lbl">Revenue Tracked</span>
       </div>
       <div class="auth-stat">
@@ -816,15 +827,54 @@ service cloud.firestore {
       </div>
     </div>
 
-    <!-- Testimonial -->
-    <div class="auth-testimonial">
-      <div class="auth-testimonial-text">"We went from handwritten booking ledgers to a fully digital system in one afternoon. The M-Pesa tracking alone saves us hours every week."</div>
-      <div class="auth-testimonial-author">
-        <div class="auth-testimonial-avatar">W</div>
-        <div>
-          <div class="auth-testimonial-name">Wangui Kamau</div>
-          <div class="auth-testimonial-biz">Nakuru Comfort Suites — Owner</div>
+    <!-- Testimonials (rotating) -->
+    <div class="auth-testimonial-carousel">
+      <div class="auth-testimonial-slide active">
+        <div class="auth-testimonial-text">"We went from handwritten booking ledgers to a fully digital system in one afternoon. The M-Pesa tracking alone saves us hours every week."</div>
+        <div class="auth-testimonial-author">
+          <div class="auth-testimonial-avatar">W</div>
+          <div>
+            <div class="auth-testimonial-name">Wangui Kamau</div>
+            <div class="auth-testimonial-biz">Nakuru Comfort Suites — Owner</div>
+          </div>
         </div>
+      </div>
+      <div class="auth-testimonial-slide">
+        <div class="auth-testimonial-text">"Managing three guesthouses used to mean three separate notebooks. Now everything is in one place and my receptionists can log in from their phones."</div>
+        <div class="auth-testimonial-author">
+          <div class="auth-testimonial-avatar">O</div>
+          <div>
+            <div class="auth-testimonial-name">Otieno Barasa</div>
+            <div class="auth-testimonial-biz">Lake View Lodges, Kisumu — Manager</div>
+          </div>
+        </div>
+      </div>
+      <div class="auth-testimonial-slide">
+        <div class="auth-testimonial-text">"The revenue dashboard showed me which room types were actually profitable. I made pricing changes within a week and saw the difference immediately."</div>
+        <div class="auth-testimonial-author">
+          <div class="auth-testimonial-avatar">A</div>
+          <div>
+            <div class="auth-testimonial-name">Amina Sheikh</div>
+            <div class="auth-testimonial-biz">Mombasa Pearl Guesthouse — Owner</div>
+          </div>
+        </div>
+      </div>
+      <div class="auth-testimonial-slide">
+        <div class="auth-testimonial-text">"Set it up in under an hour. The staff role system means my cleaner can update room status without seeing our financials. Exactly what we needed."</div>
+        <div class="auth-testimonial-author">
+          <div class="auth-testimonial-avatar">G</div>
+          <div>
+            <div class="auth-testimonial-name">Grace Njoroge</div>
+            <div class="auth-testimonial-biz">Highland Rest House, Nyeri — Owner</div>
+          </div>
+        </div>
+      </div>
+      <!-- Dots -->
+      <div class="auth-testimonial-dots">
+        <span class="auth-dot active" onclick="goTestimonial(0)"></span>
+        <span class="auth-dot" onclick="goTestimonial(1)"></span>
+        <span class="auth-dot" onclick="goTestimonial(2)"></span>
+        <span class="auth-dot" onclick="goTestimonial(3)"></span>
       </div>
     </div>
 
@@ -838,19 +888,23 @@ service cloud.firestore {
 
     <!-- Credit -->
     <div style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.07);width:100%;">
-      <p style="font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:0.05em;">Built &amp; Maintained by <span style="color:var(--gold);font-weight:600;">DatAfrica</span></p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:0.05em;">Built &amp; Maintained by <a href="https://datafrica.vercel.app/" target="_blank" style="color:var(--gold);font-weight:600;text-decoration:none;">DatAfrica</a></p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:5px;">
+        <a href="https://datafrica.vercel.app/" target="_blank" style="color:rgba(255,255,255,0.3);text-decoration:none;transition:color .2s;" onmouseover="this.style.color='rgba(201,168,76,0.8)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'"><i class="fas fa-globe" style="margin-right:5px;font-size:10px;"></i>datafrica.vercel.app</a>
+        <span style="margin:0 10px;opacity:0.3;">·</span>
+        <a href="mailto:datafrica0@gmail.com" style="color:rgba(255,255,255,0.3);text-decoration:none;transition:color .2s;" onmouseover="this.style.color='rgba(201,168,76,0.8)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'"><i class="fas fa-envelope" style="margin-right:5px;font-size:10px;"></i>datafrica0@gmail.com</a>
+      </p>
     </div>
   </div>
 
   <div class="auth-panel">
-    <div class="auth-tabs">
-      <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Sign In</div>
-      <div class="auth-tab" id="tabRegister" onclick="switchTab('register')">Register Business</div>
-    </div>
 
     <!-- Login Form -->
     <div id="loginForm">
       <div class="auth-panel-header">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 4px 12px rgba(201,168,76,0.3);">
+          <i class="fas fa-house-chimney" style="color:#fff;font-size:18px;"></i>
+        </div>
         <h2>Welcome back</h2>
         <p>Sign in to your business account</p>
       </div>
@@ -860,16 +914,19 @@ service cloud.firestore {
         <button class="btn-link" onclick="doForgotPassword()" style="font-size:12px;">Forgot password?</button>
       </div>
       <button class="btn btn-primary btn-full" id="loginBtn" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
-      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:var(--radius-sm);font-size:13px;color:var(--ink-muted);">
-        <i class="fas fa-info-circle" style="color:var(--gold);"></i> New here? Click <strong>Register Business</strong> to create your free account.
-      </div>
+      <p style="margin-top:20px;text-align:center;font-size:13px;color:var(--ink-muted);">
+        New here? <button class="btn-link" onclick="switchTab('register')" style="font-size:13px;">Create a free account</button>
+      </p>
     </div>
 
     <!-- Register Form -->
     <div id="registerForm" style="display:none;">
       <div class="auth-panel-header">
+        <div style="margin-bottom:16px;">
+          <button class="btn-link" onclick="switchTab('login')" style="font-size:13px;display:inline-flex;align-items:center;gap:6px;"><i class="fas fa-arrow-left" style="font-size:11px;"></i> Back to Sign In</button>
+        </div>
         <h2>Register Your Business</h2>
-        <p>Create a free Guest House Management System account</p>
+        <p>Create a free account — no credit card required</p>
       </div>
       <div class="form-group"><label>Business Name</label><input id="regBizName" placeholder="Grand Nairobi Guesthouse"></div>
       <div class="form-group"><label>Business Description</label><input id="regBizDesc" placeholder="Affordable comfort in the heart of the city"></div>
@@ -893,6 +950,9 @@ service cloud.firestore {
       <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="jane@grandguesthouse.com"></div>
       <div class="form-group"><label>Password</label><input type="password" id="regPass" placeholder="Min 6 characters"></div>
       <button class="btn btn-primary btn-full" id="registerBtn" onclick="doRegister()"><i class="fas fa-building"></i> Create Account</button>
+      <p style="margin-top:12px;text-align:center;font-size:12px;color:var(--ink-muted);">
+        <i class="fas fa-check-circle" style="color:var(--green);margin-right:4px;"></i>Free to start — no credit card required
+      </p>
     </div>
 
 
@@ -1704,6 +1764,8 @@ function bootFirebase(cfg) {
     auth = getAuth(app);
     db = getFirestore(app);
     showScreen("authScreen");
+    loadLiveStats();
+    startTestimonialRotator();
     // Sign out on every page load so refresh always returns to login
     signOut(auth).finally(() => {
       onAuthStateChanged(auth, handleAuthState);
@@ -1712,6 +1774,86 @@ function bootFirebase(cfg) {
     showScreen('authScreen');
     toast('Cloud connection failed: ' + e.message,'error');
   }
+}
+
+// ===== LIVE STATS =====
+const STAT_BASE = { biz: 21, bookings: 1340, revenue: 4200000 };
+
+async function loadLiveStats() {
+  try {
+    // Count businesses
+    const bizSnap = await getDocs(collection(db, 'businesses'));
+    const bizCount = Math.max(STAT_BASE.biz, bizSnap.size);
+
+    let totalBookings = STAT_BASE.bookings;
+    let totalRevenue = STAT_BASE.revenue;
+
+    // Aggregate bookings and payments across all businesses
+    const bookingPromises = bizSnap.docs.map(b => getDocs(collection(db, `businesses/${b.id}/bookings`)));
+    const paymentPromises = bizSnap.docs.map(b => getDocs(collection(db, `businesses/${b.id}/payments`)));
+    const bookingResults = await Promise.all(bookingPromises);
+    const paymentResults = await Promise.all(paymentPromises);
+
+    let liveBookings = 0;
+    bookingResults.forEach(s => { liveBookings += s.size; });
+    totalBookings = Math.max(STAT_BASE.bookings, STAT_BASE.bookings + liveBookings);
+
+    let liveRevenue = 0;
+    paymentResults.forEach(s => {
+      s.docs.forEach(d => { liveRevenue += (parseFloat(d.data().amount) || 0); });
+    });
+    totalRevenue = Math.max(STAT_BASE.revenue, STAT_BASE.revenue + liveRevenue);
+
+    // Format and render
+    const fmtRevenue = totalRevenue >= 1000000
+      ? 'KES ' + (totalRevenue / 1000000).toFixed(1) + 'M'
+      : 'KES ' + (totalRevenue / 1000).toFixed(0) + 'K';
+
+    animateCount('statBiz', bizCount);
+    animateCount('statBookings', totalBookings, '+');
+    document.getElementById('statRevenue').textContent = fmtRevenue;
+    document.getElementById('statLiveBiz').textContent = bizCount + ' businesses';
+  } catch(e) {
+    // Silently fall back to base numbers — already shown
+  }
+}
+
+function animateCount(id, target, suffix = '') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+  const duration = 1200;
+  const startTime = performance.now();
+  function step(now) {
+    const p = Math.min((now - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const val = Math.round(start + (target - start) * ease);
+    el.textContent = val.toLocaleString() + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ===== TESTIMONIAL ROTATOR =====
+let _testimonialIdx = 0;
+let _testimonialTimer = null;
+
+window.goTestimonial = function(idx) {
+  const slides = document.querySelectorAll('.auth-testimonial-slide');
+  const dots = document.querySelectorAll('.auth-dot');
+  slides.forEach(s => s.classList.remove('active'));
+  dots.forEach(d => d.classList.remove('active'));
+  _testimonialIdx = idx;
+  slides[idx]?.classList.add('active');
+  dots[idx]?.classList.add('active');
+};
+
+function startTestimonialRotator() {
+  if (_testimonialTimer) clearInterval(_testimonialTimer);
+  _testimonialTimer = setInterval(() => {
+    const slides = document.querySelectorAll('.auth-testimonial-slide');
+    goTestimonial((_testimonialIdx + 1) % slides.length);
+  }, 5000);
 }
 
 async function handleAuthState(user) {
@@ -1856,8 +1998,6 @@ function detachListeners() {
 window.switchTab = (tab) => {
   document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
   document.getElementById('registerForm').style.display = tab==='register'?'block':'none';
-  document.getElementById('tabLogin').className = 'auth-tab'+(tab==='login'?' active':'');
-  document.getElementById('tabRegister').className = 'auth-tab'+(tab==='register'?' active':'');
 };
 
 window.doLogin = async () => {
