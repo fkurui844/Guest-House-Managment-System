@@ -236,6 +236,14 @@ tbody tr:hover td{background:var(--surface2);}
 .modal-close{background:none;border:none;font-size:20px;color:var(--ink-muted);cursor:pointer;padding:4px;line-height:1;}
 .modal-close:hover{color:var(--ink);}
 .modal-body{padding:24px 28px;}
+
+/* ===== BOOKING STEPS ===== */
+.bstep{
+  font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;
+  background:var(--surface2);color:var(--ink-muted);
+}
+.bstep.active{background:var(--gold);color:#fff;}
+.bstep.done{background:var(--green-light);color:var(--green);}
 .modal-footer{padding:16px 28px 24px;display:flex;gap:10px;justify-content:flex-end;}
 
 /* ===== ALERTS ===== */
@@ -730,32 +738,249 @@ service cloud.firestore {
   </div>
 </div>
 
-<!-- Add Booking -->
+<!-- Add Booking (3-step) -->
 <div id="addBookingModal" class="modal-overlay">
-  <div class="modal">
-    <div class="modal-head"><h3>New Booking</h3><button class="modal-close" onclick="closeModal('addBookingModal')">×</button></div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group"><label>Guest Name</label><input id="bGuest" placeholder="John Kamau"></div>
-        <div class="form-group"><label>Guest Phone</label><input id="bPhone" placeholder="0712 345 678"></div>
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <div>
+        <h3 id="bookingModalTitle">New Booking</h3>
+        <div id="bookingStepIndicator" style="display:flex;gap:6px;margin-top:8px;">
+          <div class="bstep active" data-step="1">1 Guest Details</div>
+          <div style="color:var(--border);font-size:12px;line-height:24px;">›</div>
+          <div class="bstep" data-step="2">2 Payment</div>
+          <div style="color:var(--border);font-size:12px;line-height:24px;">›</div>
+          <div class="bstep" data-step="3">3 Receipt</div>
+        </div>
       </div>
-      <div class="form-group"><label>Select Room</label>
-        <select id="bRoom"><option value="">— Select available room —</option></select>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Check-in Date</label><input id="bCheckIn" type="date"></div>
-        <div class="form-group"><label>Check-out Date</label><input id="bCheckOut" type="date"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>No. of Guests</label><input id="bNumGuests" type="number" min="1" value="1"></div>
-        <div class="form-group"><label>Special Requests</label><input id="bNotes" placeholder="Ground floor, early check-in…"></div>
-      </div>
-      <div id="bookingAmountPreview" style="display:none;background:var(--gold-light);border-radius:var(--radius-sm);padding:12px 16px;font-size:14px;margin-top:8px;color:var(--gold-dark);font-weight:600;"></div>
+      <button class="modal-close" onclick="closeBookingModal()">×</button>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('addBookingModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveBooking()"><i class="fas fa-calendar-plus"></i> Create Booking</button>
+
+    <!-- STEP 1: Guest Details -->
+    <div id="bookingStep1">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label>Guest Name</label><input id="bGuest" placeholder="John Kamau"></div>
+          <div class="form-group"><label>Guest Phone</label><input id="bPhone" placeholder="0712 345 678"></div>
+        </div>
+        <div class="form-group"><label>Select Room</label>
+          <select id="bRoom"><option value="">— Select available room —</option></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Check-in Date</label><input id="bCheckIn" type="date"></div>
+          <div class="form-group"><label>Check-out Date</label><input id="bCheckOut" type="date"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>No. of Guests</label><input id="bNumGuests" type="number" min="1" value="1"></div>
+          <div class="form-group"><label>Special Requests</label><input id="bNotes" placeholder="Ground floor, early check-in…"></div>
+        </div>
+
+        <!-- Payment Method Selection -->
+        <div class="form-group" style="margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-credit-card" style="color:var(--gold);font-size:13px;"></i>
+            Payment Method <span style="color:var(--red);margin-left:2px;">*</span>
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:2px;">
+            <label id="pmLabel-mpesa" onclick="selectPaymentMethod('mpesa')" style="border:2px solid var(--gold);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;text-align:center;background:var(--gold-light);transition:all .2s;">
+              <input type="radio" name="bPayMethod" value="mpesa" style="display:none;" checked>
+              <div style="font-size:18px;margin-bottom:4px;">📱</div>
+              <div style="font-size:12px;font-weight:700;color:var(--gold-dark);">M-Pesa</div>
+            </label>
+            <label id="pmLabel-cash" onclick="selectPaymentMethod('cash')" style="border:2px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;text-align:center;background:var(--surface2);transition:all .2s;">
+              <input type="radio" name="bPayMethod" value="cash" style="display:none;">
+              <div style="font-size:18px;margin-bottom:4px;">💵</div>
+              <div style="font-size:12px;font-weight:700;color:var(--ink-muted);">Cash</div>
+            </label>
+            <label id="pmLabel-bank" onclick="selectPaymentMethod('bank')" style="border:2px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;text-align:center;background:var(--surface2);transition:all .2s;">
+              <input type="radio" name="bPayMethod" value="bank" style="display:none;">
+              <div style="font-size:18px;margin-bottom:4px;">🏦</div>
+              <div style="font-size:12px;font-weight:700;color:var(--ink-muted);">Bank Transfer</div>
+            </label>
+          </div>
+          <div id="payMethodHint" style="font-size:12px;color:var(--gold-dark);margin-top:6px;padding:6px 10px;background:var(--gold-light);border-radius:var(--radius-sm);display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-mobile-alt"></i> <span id="payMethodHintText">Client will pay via M-Pesa — you'll enter the confirmation code next.</span>
+          </div>
+        </div>
+
+        <div id="bookingAmountPreview" style="display:none;background:var(--gold-light);border-radius:var(--radius-sm);padding:12px 16px;font-size:14px;margin-top:8px;color:var(--gold-dark);font-weight:600;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeBookingModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="bookingGoToPayment()"><i class="fas fa-arrow-right"></i> Proceed to Payment</button>
+      </div>
     </div>
+
+    <!-- STEP 2: Payment -->
+    <div id="bookingStep2" style="display:none;">
+      <div class="modal-body">
+        <!-- Amount summary -->
+        <div style="background:var(--ink);color:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;text-align:center;">
+          <div style="font-size:12px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">Amount Due</div>
+          <div id="payAmountDisplay" style="font-family:var(--font-display);font-size:36px;color:var(--gold);">KES 0</div>
+          <div id="payNightsDisplay" style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;"></div>
+        </div>
+
+        <!-- Payment method tabs -->
+        <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:18px;">
+          <button class="pmtab active" id="pmtab-mpesa" onclick="switchPayMethod('mpesa')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--gold);color:#fff;transition:all .2s;">
+            <i class="fas fa-mobile-alt"></i> M-Pesa
+          </button>
+          <button class="pmtab" id="pmtab-cash" onclick="switchPayMethod('cash')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--surface2);color:var(--ink-muted);transition:all .2s;">
+            <i class="fas fa-money-bill"></i> Cash
+          </button>
+          <button class="pmtab" id="pmtab-bank" onclick="switchPayMethod('bank')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--surface2);color:var(--ink-muted);transition:all .2s;">
+            <i class="fas fa-university"></i> Bank
+          </button>
+        </div>
+
+        <!-- M-Pesa panel -->
+        <div id="pmPanel-mpesa">
+          <div style="background:var(--green-light);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;border-left:3px solid var(--green);">
+            <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px;"><i class="fas fa-mobile-alt" style="margin-right:6px;"></i>M-Pesa Payment Instructions</div>
+            <ol style="font-size:13px;color:var(--ink-soft);line-height:2;padding-left:18px;">
+              <li>Go to <strong>M-Pesa</strong> on your phone</li>
+              <li>Select <strong>Lipa na M-Pesa → Send Money</strong></li>
+              <li>Enter paybill / till number provided by the property</li>
+              <li>Enter amount: <strong id="mpesaAmountHint">—</strong></li>
+              <li>Enter your M-Pesa PIN and confirm</li>
+              <li>You'll receive an SMS confirmation code</li>
+            </ol>
+          </div>
+          <div class="form-group">
+            <label>Guest's Payment Phone Number</label>
+            <input id="payMpesaPhone" placeholder="e.g. 0712 345 678" type="tel">
+            <div class="form-hint">The number the guest will pay from</div>
+          </div>
+          <div class="form-group">
+            <label>M-Pesa Confirmation Code <span style="color:var(--ink-muted);font-weight:400">(enter after payment is made)</span></label>
+            <input id="payMpesaCode" placeholder="e.g. QGH7X2P1K3" style="text-transform:uppercase;letter-spacing:.08em;font-family:monospace;" oninput="this.value=this.value.toUpperCase()">
+            <div class="form-hint">The code sent to the guest via SMS after payment</div>
+          </div>
+        </div>
+
+        <!-- Cash panel -->
+        <div id="pmPanel-cash" style="display:none;">
+          <div style="background:var(--gold-light);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;border-left:3px solid var(--gold);">
+            <div style="font-size:13px;font-weight:700;color:var(--gold-dark);margin-bottom:4px;"><i class="fas fa-money-bill" style="margin-right:6px;"></i>Cash Payment</div>
+            <div style="font-size:13px;color:var(--ink-soft);">Collect <strong id="cashAmountHint">—</strong> from the guest and confirm below.</div>
+          </div>
+          <div class="form-group">
+            <label>Cash Reference / Receipt No. <span style="color:var(--ink-muted);font-weight:400">(optional)</span></label>
+            <input id="payCashRef" placeholder="e.g. CASH-001">
+          </div>
+        </div>
+
+        <!-- Bank panel -->
+        <div id="pmPanel-bank" style="display:none;">
+          <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;border-left:3px solid var(--blue);">
+            <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px;"><i class="fas fa-university" style="margin-right:6px;"></i>Bank Transfer</div>
+            <div style="font-size:13px;color:var(--ink-soft);">Amount: <strong id="bankAmountHint">—</strong>. Enter the transfer reference once confirmed.</div>
+          </div>
+          <div class="form-group">
+            <label>Bank Transfer Reference</label>
+            <input id="payBankRef" placeholder="e.g. TRF202506001">
+          </div>
+        </div>
+
+        <div id="payPartialWrap" style="margin-top:4px;">
+          <div class="form-group">
+            <label>Amount Paid <span style="color:var(--ink-muted);font-weight:400">(leave blank if full amount)</span></label>
+            <input id="payAmountPaid" type="number" min="0" placeholder="Leave blank for full amount">
+            <div class="form-hint" id="payBalanceHint"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="bookingBackToDetails()"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn btn-primary" id="confirmPaymentBtn" onclick="confirmBookingPayment()"><i class="fas fa-check"></i> Confirm &amp; Create Booking</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Receipt -->
+    <div id="bookingStep3" style="display:none;">
+      <div class="modal-body" style="padding-bottom:10px;">
+        <!-- Receipt card -->
+        <div id="receiptCard" style="border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+          <!-- Receipt header -->
+          <div style="background:var(--ink);padding:20px 24px;text-align:center;">
+            <div style="font-family:var(--font-display);font-size:22px;color:#fff;">Stay<span style="color:var(--gold);">Desk</span></div>
+            <div id="rcptBizName" style="font-size:13px;color:rgba(255,255,255,.6);margin-top:3px;"></div>
+            <div id="rcptBizPhone" style="font-size:12px;color:rgba(255,255,255,.4);"></div>
+          </div>
+          <!-- Receipt title row -->
+          <div style="background:var(--gold);padding:8px 24px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.08em;">Payment Receipt</span>
+            <span id="rcptRef" style="font-size:11px;font-weight:700;color:rgba(255,255,255,.85);font-family:monospace;"></span>
+          </div>
+          <!-- Body -->
+          <div style="padding:18px 24px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:16px;">
+              <div>
+                <div style="font-size:10px;color:var(--ink-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Guest</div>
+                <div id="rcptGuest" style="font-size:14px;font-weight:600;color:var(--ink);margin-top:2px;"></div>
+                <div id="rcptPhone" style="font-size:12px;color:var(--ink-muted);"></div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--ink-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Date Issued</div>
+                <div id="rcptDate" style="font-size:14px;font-weight:600;color:var(--ink);margin-top:2px;"></div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--ink-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Room</div>
+                <div id="rcptRoom" style="font-size:14px;font-weight:600;color:var(--ink);margin-top:2px;"></div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--ink-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Nights</div>
+                <div id="rcptNights" style="font-size:14px;font-weight:600;color:var(--ink);margin-top:2px;"></div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--ink-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Check-in</div>
+                <div id="rcptCheckIn" style="font-size:14px;font-weight:600;color:var(--ink);margin-top:2px;"></div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--ink-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Check-out</div>
+                <div id="rcptCheckOut" style="font-size:14px;font-weight:600;color:var(--ink);margin-top:2px;"></div>
+              </div>
+            </div>
+            <hr style="border:none;border-top:1px dashed var(--border);margin:12px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12px;color:var(--ink-muted);">Payment Method</span>
+              <span id="rcptMethod" style="font-size:13px;font-weight:600;color:var(--ink);"></span>
+            </div>
+            <div id="rcptCodeRow" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12px;color:var(--ink-muted);">Transaction Ref</span>
+              <span id="rcptCode" style="font-size:13px;font-weight:600;color:var(--ink);font-family:monospace;"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12px;color:var(--ink-muted);">Total Amount</span>
+              <span id="rcptTotal" style="font-size:15px;font-weight:700;color:var(--ink);"></span>
+            </div>
+            <div id="rcptPaidRow" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12px;color:var(--ink-muted);">Amount Paid</span>
+              <span id="rcptPaid" style="font-size:15px;font-weight:700;color:var(--green);"></span>
+            </div>
+            <div id="rcptBalanceRow" style="display:none;background:var(--red-light);border-radius:var(--radius-sm);padding:8px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--red);font-weight:600;">Balance Due</span>
+              <span id="rcptBalance" style="font-size:14px;font-weight:700;color:var(--red);"></span>
+            </div>
+            <div style="margin-top:14px;background:var(--green-light);border-radius:var(--radius-sm);padding:10px 14px;text-align:center;">
+              <span id="rcptStatus" style="font-size:13px;font-weight:700;color:var(--green);"><i class="fas fa-check-circle" style="margin-right:6px;"></i>Booking Confirmed</span>
+            </div>
+          </div>
+          <!-- Receipt footer -->
+          <div style="background:var(--surface2);padding:10px 24px;text-align:center;border-top:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--ink-muted);">Thank you for choosing <span id="rcptBizNameFooter"></span> · Powered by StayDesk</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="printReceipt()"><i class="fas fa-print"></i> Print</button>
+        <button class="btn btn-outline btn-sm" onclick="copyReceiptText()"><i class="fas fa-copy"></i> Copy</button>
+        <button class="btn btn-outline btn-sm" onclick="shareReceiptWhatsApp()"><i class="fab fa-whatsapp" style="color:#25D366"></i> WhatsApp</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn-primary" onclick="closeBookingModal()"><i class="fas fa-check"></i> Done</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1273,7 +1498,31 @@ function updateBookingPreview() {
   prev.innerHTML=`<i class="fas fa-calculator"></i> ${nights} night${nights>1?'s':''} × ${cur} ${parseFloat(opt.dataset.price).toLocaleString()} = <strong>${cur} ${total.toLocaleString()}</strong>`;
 }
 
-window.saveBooking = async () => {
+// ===== BOOKING FLOW HELPERS =====
+// Holds computed booking data across steps
+let _bData = {};
+
+window.closeBookingModal = () => {
+  closeModal('addBookingModal');
+  setTimeout(() => {
+    // Reset all steps
+    document.getElementById('bookingStep1').style.display = 'block';
+    document.getElementById('bookingStep2').style.display = 'none';
+    document.getElementById('bookingStep3').style.display = 'none';
+    document.querySelectorAll('.bstep').forEach((el,i) => {
+      el.className = 'bstep' + (i===0?' active':'');
+    });
+    document.getElementById('bookingModalTitle').textContent = 'New Booking';
+    clearFields(['bGuest','bPhone','bCheckIn','bCheckOut','bNotes','payMpesaPhone','payMpesaCode','payCashRef','payBankRef','payAmountPaid']);
+    document.getElementById('bookingAmountPreview').style.display='none';
+    _bData = {};
+    // Reset payment method selector to M-Pesa
+    selectedPayMethod = 'mpesa';
+    selectPaymentMethod('mpesa');
+  }, 300);
+};
+
+window.bookingGoToPayment = () => {
   const guestName=v('bGuest'), guestPhone=v('bPhone'), roomId=v('bRoom'),
     checkIn=v('bCheckIn'), checkOut=v('bCheckOut'), numGuests=v('bNumGuests'), notes=v('bNotes');
   if (!guestName||!roomId||!checkIn||!checkOut) { toast('Fill all required fields','error'); return; }
@@ -1282,22 +1531,230 @@ window.saveBooking = async () => {
   const room = rooms.find(r=>r.id===roomId);
   const nights = Math.round((checkOutD-checkInD)/86400000);
   const amount = nights * room.price;
+  const cur = currentBiz?.currency||'KES';
+
+  _bData = { guestName, guestPhone, roomId, room, checkIn, checkOut, nights, amount, cur,
+    numGuests: parseInt(numGuests)||1, notes };
+
+  // Populate payment step
+  document.getElementById('payAmountDisplay').textContent = `${cur} ${amount.toLocaleString()}`;
+  document.getElementById('payNightsDisplay').textContent = `${nights} night${nights>1?'s':''} · ${room.roomNumber} ${room.type}`;
+  document.getElementById('mpesaAmountHint').textContent = `${cur} ${amount.toLocaleString()}`;
+  document.getElementById('cashAmountHint').textContent = `${cur} ${amount.toLocaleString()}`;
+  document.getElementById('bankAmountHint').textContent = `${cur} ${amount.toLocaleString()}`;
+  document.getElementById('payMpesaPhone').value = guestPhone || '';
+
+  // Update step indicators
+  const steps = document.querySelectorAll('.bstep');
+  steps[0].className = 'bstep done';
+  steps[1].className = 'bstep active';
+  steps[2].className = 'bstep';
+  document.getElementById('bookingModalTitle').textContent = 'Payment';
+
+  document.getElementById('bookingStep1').style.display = 'none';
+  document.getElementById('bookingStep2').style.display = 'block';
+  // Sync the payment method chosen in Step 1
+  switchPayMethod(selectedPayMethod || 'mpesa');
+};
+
+window.bookingBackToDetails = () => {
+  document.getElementById('bookingStep2').style.display = 'none';
+  document.getElementById('bookingStep1').style.display = 'block';
+  const steps = document.querySelectorAll('.bstep');
+  steps[0].className = 'bstep active';
+  steps[1].className = 'bstep';
+  document.getElementById('bookingModalTitle').textContent = 'New Booking';
+};
+
+window.switchPayMethod = (method) => {
+  ['mpesa','cash','bank'].forEach(m => {
+    document.getElementById(`pmPanel-${m}`).style.display = m===method ? 'block' : 'none';
+    const tab = document.getElementById(`pmtab-${m}`);
+    if (m===method) {
+      tab.style.background = 'var(--gold)'; tab.style.color = '#fff';
+    } else {
+      tab.style.background = 'var(--surface2)'; tab.style.color = 'var(--ink-muted)';
+    }
+  });
+  _bData.payMethod = method;
+};
+
+// Live balance hint
+document.addEventListener('input', e => {
+  if (e.target.id === 'payAmountPaid' && _bData.amount) {
+    const paid = parseFloat(e.target.value) || 0;
+    const balance = _bData.amount - paid;
+    const hint = document.getElementById('payBalanceHint');
+    const cur = _bData.cur || 'KES';
+    if (paid > 0 && balance > 0) hint.textContent = `Balance due: ${cur} ${balance.toLocaleString()}`;
+    else if (paid >= _bData.amount) hint.textContent = 'Full amount covered ✓';
+    else hint.textContent = '';
+  }
+});
+
+window.confirmBookingPayment = async () => {
+  const method = _bData.payMethod || 'mpesa';
+  let payRef = '';
+
+  if (method === 'mpesa') {
+    payRef = v('payMpesaCode');
+    if (!payRef) { toast('Enter the M-Pesa confirmation code','error'); return; }
+  } else if (method === 'cash') {
+    payRef = v('payCashRef') || 'CASH';
+  } else if (method === 'bank') {
+    payRef = v('payBankRef');
+    if (!payRef) { toast('Enter the bank transfer reference','error'); return; }
+  }
+
+  const amountPaidInput = parseFloat(v('payAmountPaid')) || 0;
+  const amountPaid = amountPaidInput > 0 ? amountPaidInput : _bData.amount;
+  const balance = _bData.amount - amountPaid;
+  const mpesaPhone = method === 'mpesa' ? (v('payMpesaPhone') || _bData.guestPhone) : '';
+  const methodLabel = method === 'mpesa' ? 'M-Pesa' : method === 'cash' ? 'Cash' : 'Bank Transfer';
+  const bookingRef = 'BK' + Date.now().toString(36).toUpperCase();
+
+  const btn = document.getElementById('confirmPaymentBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
 
   try {
+    const { guestName, guestPhone, roomId, room, checkIn, checkOut, nights, amount, cur, numGuests, notes } = _bData;
+
+    // Save booking
     await addDoc(collection(db,`businesses/${bizId}/bookings`), {
       guestName, guestPhone, roomId, roomNumber:room.roomNumber, roomType:room.type,
-      checkIn, checkOut, nights, amount, numGuests: parseInt(numGuests)||1,
-      notes, status:'Confirmed', createdBy: currentUser.displayName||currentUser.email,
+      checkIn, checkOut, nights, amount, numGuests, notes,
+      status:'Confirmed', bookingRef, payMethod: methodLabel, payRef, amountPaid, balance,
+      createdBy: currentUser.displayName||currentUser.email, createdAt: serverTimestamp()
+    });
+    // Save payment record
+    await addDoc(collection(db,`businesses/${bizId}/payments`), {
+      guestName, guestPhone: mpesaPhone||guestPhone, amount: amountPaid, method: methodLabel,
+      reference: payRef, bookingRef, notes: `Room ${room.roomNumber} · ${nights} night${nights>1?'s':''}`,
+      status: 'Completed', processedBy: currentUser.displayName||currentUser.email,
       createdAt: serverTimestamp()
     });
     // Mark room occupied
     await updateDoc(doc(db,`businesses/${bizId}/rooms`,roomId),{status:'Occupied'});
-    toast('Booking created!','success');
-    closeModal('addBookingModal');
-    clearFields(['bGuest','bPhone','bCheckIn','bCheckOut','bNotes']);
-    document.getElementById('bookingAmountPreview').style.display='none';
-  } catch(e) { toast(e.message,'error'); }
+
+    // Build receipt
+    _bData.bookingRef = bookingRef; _bData.amountPaid = amountPaid;
+    _bData.balance = balance; _bData.payRef = payRef; _bData.methodLabel = methodLabel;
+    showReceipt();
+  } catch(e) {
+    toast(e.message,'error');
+    btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirm & Create Booking';
+  }
 };
+
+function showReceipt() {
+  const { guestName, guestPhone, room, checkIn, checkOut, nights, amount, amountPaid,
+    balance, cur, bookingRef, payRef, methodLabel } = _bData;
+  const bizName = currentBiz?.name || 'StayDesk Property';
+
+  document.getElementById('rcptBizName').textContent = bizName;
+  document.getElementById('rcptBizPhone').textContent = currentBiz?.phone || '';
+  document.getElementById('rcptRef').textContent = `REF: ${bookingRef}`;
+  document.getElementById('rcptGuest').textContent = guestName;
+  document.getElementById('rcptPhone').textContent = guestPhone || '';
+  document.getElementById('rcptDate').textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('rcptRoom').textContent = `${room.roomNumber} — ${room.type}`;
+  document.getElementById('rcptNights').textContent = `${nights} night${nights>1?'s':''}`;
+  document.getElementById('rcptCheckIn').textContent = checkIn;
+  document.getElementById('rcptCheckOut').textContent = checkOut;
+  document.getElementById('rcptMethod').textContent = methodLabel;
+  document.getElementById('rcptCode').textContent = payRef || '—';
+  document.getElementById('rcptCodeRow').style.display = payRef ? 'flex' : 'none';
+  document.getElementById('rcptTotal').textContent = `${cur} ${amount.toLocaleString()}`;
+  document.getElementById('rcptPaid').textContent = `${cur} ${amountPaid.toLocaleString()}`;
+  document.getElementById('rcptBizNameFooter').textContent = bizName;
+
+  const balRow = document.getElementById('rcptBalanceRow');
+  if (balance > 0) {
+    balRow.style.display = 'flex';
+    document.getElementById('rcptBalance').textContent = `${cur} ${balance.toLocaleString()}`;
+    document.getElementById('rcptStatus').innerHTML = '<i class="fas fa-clock" style="margin-right:6px;color:var(--gold-dark)"></i><span style="color:var(--gold-dark)">Booking Confirmed — Balance Pending</span>';
+    balRow.style.background = 'var(--red-light)';
+  } else {
+    balRow.style.display = 'none';
+    document.getElementById('rcptStatus').innerHTML = '<i class="fas fa-check-circle" style="margin-right:6px;"></i>Paid in Full — Booking Confirmed';
+  }
+
+  const steps = document.querySelectorAll('.bstep');
+  steps[1].className = 'bstep done';
+  steps[2].className = 'bstep active';
+  document.getElementById('bookingModalTitle').textContent = 'Receipt';
+  document.getElementById('bookingStep2').style.display = 'none';
+  document.getElementById('bookingStep3').style.display = 'block';
+
+  const btn = document.getElementById('confirmPaymentBtn');
+  btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirm & Create Booking';
+}
+
+window.printReceipt = () => {
+  const rcpt = document.getElementById('receiptCard').outerHTML;
+  const w = window.open('','_blank','width=480,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:'DM Sans',sans-serif;background:#fff;padding:20px;}
+      :root{--ink:#0f0f0f;--ink-soft:#3a3a3a;--ink-muted:#8a8a8a;--surface:#fff;--surface2:#f4f3ef;--border:#e5e3dc;--gold:#c9a84c;--gold-light:#f0e6c8;--gold-dark:#9e7c2a;--green:#2d7a5e;--green-light:#d4ede5;--red:#c0392b;--red-light:#fde8e6;--blue:#2756a6;--radius:10px;--radius-sm:6px;--font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;}
+      .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+    </style></head><body>${rcpt}<scr'+'ipt>window.onload=()=>window.print();</scr'+'ipt></body></html>`);
+  w.document.close();
+};
+
+window.copyReceiptText = () => {
+  const { guestName, guestPhone, room, checkIn, checkOut, nights, amount, amountPaid,
+    balance, cur, bookingRef, payRef, methodLabel } = _bData;
+  const bizName = currentBiz?.name || 'StayDesk Property';
+  const text = [
+    `===== PAYMENT RECEIPT =====`,
+    `${bizName}`,
+    `Ref: ${bookingRef}`,
+    `Date: ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`,
+    `──────────────────────────`,
+    `Guest: ${guestName}`,
+    `Phone: ${guestPhone||'—'}`,
+    `Room: ${room.roomNumber} (${room.type})`,
+    `Check-in: ${checkIn}`,
+    `Check-out: ${checkOut}`,
+    `Nights: ${nights}`,
+    `──────────────────────────`,
+    `Payment: ${methodLabel}`,
+    payRef ? `Transaction: ${payRef}` : '',
+    `Total: ${cur} ${amount.toLocaleString()}`,
+    `Paid: ${cur} ${amountPaid.toLocaleString()}`,
+    balance > 0 ? `Balance: ${cur} ${balance.toLocaleString()}` : 'PAID IN FULL',
+    `──────────────────────────`,
+    `Thank you for choosing ${bizName}`,
+    `Powered by StayDesk`
+  ].filter(Boolean).join('\n');
+  navigator.clipboard.writeText(text).then(() => toast('Receipt copied to clipboard','success'))
+    .catch(() => toast('Could not copy','error'));
+};
+
+window.shareReceiptWhatsApp = () => {
+  const { guestName, room, checkIn, checkOut, nights, amount, amountPaid, balance, cur, bookingRef, payRef, methodLabel } = _bData;
+  const bizName = currentBiz?.name || '';
+  const msg = `*Payment Receipt — ${bizName}*
+
+Guest: ${guestName}
+Room: ${room.roomNumber} (${room.type})
+Check-in: ${checkIn}
+Check-out: ${checkOut} (${nights} night${nights>1?'s':''})
+
+Payment: ${methodLabel}${payRef?'\nRef: '+payRef:''}
+Total: ${cur} ${amount.toLocaleString()}
+Paid: ${cur} ${amountPaid.toLocaleString()}${balance>0?'\nBalance: '+cur+' '+balance.toLocaleString():'\n Paid in Full'}
+
+Ref: ${bookingRef}
+Thank you for your stay!`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+};
+
+// Legacy saveBooking kept as no-op (flow now handled by confirmBookingPayment)
+window.saveBooking = () => {};
 
 window.updateBookingStatus = async (bookingId, status, roomId) => {
   const updates = {status};
@@ -1736,6 +2193,37 @@ window.toast = (msg, type='success') => {
   div.innerHTML = `<i class="fas fa-${icon}"></i><span>${msg}</span>`;
   stack.appendChild(div);
   setTimeout(()=>div.remove(), 3500);
+};
+
+// ===== PAYMENT METHOD SELECTOR (Step 1) =====
+let selectedPayMethod = 'mpesa';
+
+window.selectPaymentMethod = (method) => {
+  selectedPayMethod = method;
+  const hints = {
+    mpesa: "Client will pay via M-Pesa — confirmation code required next.",
+    cash:  "Client will pay in cash — collect the amount and confirm.",
+    bank:  "Client will pay via Bank Transfer — enter the reference number next.",
+  };
+  ['mpesa','cash','bank'].forEach(m => {
+    const lbl = document.getElementById('pmLabel-' + m);
+    if (!lbl) return;
+    const nameEl = lbl.querySelector('div:last-child');
+    const radio = lbl.querySelector('input[type=radio]');
+    if (m === method) {
+      lbl.style.border = '2px solid var(--gold)';
+      lbl.style.background = 'var(--gold-light)';
+      if (nameEl) nameEl.style.color = 'var(--gold-dark)';
+      if (radio) radio.checked = true;
+    } else {
+      lbl.style.border = '2px solid var(--border)';
+      lbl.style.background = 'var(--surface2)';
+      if (nameEl) nameEl.style.color = 'var(--ink-muted)';
+      if (radio) radio.checked = false;
+    }
+  });
+  const hintText = document.getElementById('payMethodHintText');
+  if (hintText) hintText.textContent = hints[method];
 };
 
 function friendlyAuthError(code){
