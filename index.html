@@ -485,6 +485,7 @@ service cloud.firestore {
     <nav class="sidebar-nav">
       <div class="nav-section-label">Operations</div>
       <div class="nav-item active" id="navDashboard" onclick="showSection('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</div>
+      <div class="nav-item" id="navStaffDash" style="display:none;" onclick="showSection('staffDash')"><i class="fas fa-chart-pie"></i> My Dashboard</div>
       <div class="nav-item" id="navRooms" onclick="showSection('rooms')"><i class="fas fa-door-open"></i> Rooms</div>
       <div class="nav-item" id="navBookings" onclick="showSection('bookings')"><i class="fas fa-calendar-check"></i> Bookings</div>
       <div class="nav-item" id="navPayments" onclick="showSection('payments')"><i class="fas fa-credit-card"></i> Payments</div>
@@ -558,14 +559,74 @@ service cloud.firestore {
 
       <!-- ROOMS -->
       <div id="roomsSection" class="section">
-        <div class="page-header"><h1>Rooms</h1><p>Manage your guest house rooms and pricing</p></div>
-        <div class="section-actions">
-          <button class="btn btn-primary btn-sm" onclick="openModal('addRoomModal')"><i class="fas fa-plus"></i> Add Room</button>
+        <div class="page-header"><h1>Rooms</h1><p id="roomsPageDesc">Manage your guest house rooms and pricing</p></div>
+        <div class="section-actions" id="roomsActions">
+          <button class="btn btn-primary btn-sm" id="addRoomBtn" onclick="openModal('addRoomModal')"><i class="fas fa-plus"></i> Add Room</button>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Room No.</th><th>Type</th><th>Price / Night</th><th>Amenities</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Room No.</th><th>Type</th><th>Price / Night</th><th>Amenities</th><th>Status</th><th id="roomsActionsCol">Actions</th></tr></thead>
             <tbody id="roomsTable"><tr class="empty-row"><td colspan="6"><div class="loading-spinner"><div class="spinner"></div>Loading rooms...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STAFF DASHBOARD -->
+      <div id="staffDashSection" class="section">
+        <div class="page-header">
+          <h1 id="staffDashGreet">Good morning</h1>
+          <p>Here's your shift overview for today</p>
+        </div>
+        <!-- Summary cards -->
+        <div class="metrics-grid" style="margin-bottom:28px;">
+          <div class="metric-card">
+            <div class="metric-icon"><i class="fas fa-door-open"></i></div>
+            <div class="metric-label">Available Rooms</div>
+            <div class="metric-value" id="sdAvailable">—</div>
+            <div class="metric-sub" id="sdAvailableSub">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon" style="color:var(--red)"><i class="fas fa-bed"></i></div>
+            <div class="metric-label">Occupied Rooms</div>
+            <div class="metric-value" id="sdOccupied">—</div>
+            <div class="metric-sub" id="sdOccupiedSub">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon" style="color:var(--blue)"><i class="fas fa-calendar-check"></i></div>
+            <div class="metric-label">Today's Bookings</div>
+            <div class="metric-value" id="sdTodayBookings">—</div>
+            <div class="metric-sub">Check-ins &amp; check-outs today</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon" style="color:var(--green)"><i class="fas fa-coins"></i></div>
+            <div class="metric-label">Today's Payments</div>
+            <div class="metric-value" id="sdTodayPayments">—</div>
+            <div class="metric-sub" id="sdTodayPaymentsSub">—</div>
+          </div>
+        </div>
+
+        <!-- Days worked -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:18px;">
+          <div style="width:52px;height:52px;border-radius:50%;background:var(--gold-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-calendar-alt" style="color:var(--gold-dark);font-size:20px;"></i>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--ink-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Your Tenure</div>
+            <div style="font-size:22px;font-family:var(--font-display);color:var(--ink);" id="sdDaysWorked">—</div>
+            <div style="font-size:12px;color:var(--ink-muted);" id="sdJoinedDate">—</div>
+          </div>
+        </div>
+
+        <!-- Room status grid -->
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink);">Room Status Overview</h3>
+        <div id="sdRoomGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:28px;"></div>
+
+        <!-- Today's bookings table -->
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink);">Today's Activity</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead>
+            <tbody id="sdBookingsTable"><tr class="empty-row"><td colspan="5"><i class="fas fa-calendar"></i>No activity today</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -946,8 +1007,9 @@ function bootApp() {
   showScreen('mainApp');
   populateSidebar();
   startListeners();
-  if (userRole === 'receptionist') {
-    showSection('rooms');
+  const isStaff = userRole !== 'owner' && userRole !== 'manager';
+  if (isStaff) {
+    showSection('staffDash');
   } else {
     showSection('dashboard');
     const hr = new Date().getHours();
@@ -963,20 +1025,24 @@ function populateSidebar() {
   setEl('sbUserName', currentUser.displayName || currentUser.email);
   setEl('sbUserRole', capitalize(userRole));
 
-  const isReceptionist = userRole === 'receptionist';
+  const isStaff = userRole !== 'owner' && userRole !== 'manager';
   const hide = (id) => { const el=document.getElementById(id); if(el) el.style.display='none'; };
-  const show = (id) => { const el=document.getElementById(id); if(el) el.style.display=''; };
 
-  if (isReceptionist) {
-    // Receptionists: only Rooms, Bookings, Payments — no Dashboard, Staff, Profile
+  if (isStaff) {
+    // Staff: hide owner-only nav items
     hide('navDashboard');
     hide('navUsers');
     hide('navProfile');
     hide('navManagementLabel');
-    // Show their allowed sections
-    show('navRooms');
-    show('navBookings');
-    show('navPayments');
+    // Show staff dashboard nav
+    const navSD = document.getElementById('navStaffDash');
+    if (navSD) navSD.style.display = '';
+    // Hide Add Room button and Actions column — staff view only
+    hide('addRoomBtn');
+    hide('roomsActionsCol');
+    // Update rooms page description
+    const desc = document.getElementById('roomsPageDesc');
+    if (desc) desc.textContent = 'Room availability overview';
   }
 }
 
@@ -996,6 +1062,7 @@ function startListeners() {
   listeners.push(onSnapshot(bq, snap => {
     bookings = snap.docs.map(d => ({id:d.id,...d.data()}));
     renderBookings(); renderDashBookings(); updateDashboard();
+    if (userRole !== 'owner' && userRole !== 'manager') updateStaffDashboard();
   }));
 
   // Payments
@@ -1003,6 +1070,7 @@ function startListeners() {
   listeners.push(onSnapshot(pq, snap => {
     payments = snap.docs.map(d => ({id:d.id,...d.data()}));
     renderPayments(); updateDashboard();
+    if (userRole !== 'owner' && userRole !== 'manager') updateStaffDashboard();
   }));
 
   // Users
@@ -1149,26 +1217,29 @@ function renderRooms() {
     tbody.innerHTML = `<tr class="empty-row"><td colspan="6"><i class="fas fa-door-open"></i>No rooms yet — add your first room</td></tr>`;
     return;
   }
+  const isStaff = userRole !== 'owner' && userRole !== 'manager';
   tbody.innerHTML = rooms.map(r => {
     const statusBadge = r.status==='Available'
       ? `<span class="badge badge-success"><i class="fas fa-circle" style="font-size:8px"></i> Available</span>`
       : r.status==='Occupied'
       ? `<span class="badge badge-danger"><i class="fas fa-circle" style="font-size:8px"></i> Occupied</span>`
       : `<span class="badge badge-muted"><i class="fas fa-wrench" style="font-size:8px"></i> Maintenance</span>`;
-    return `<tr>
-      <td><strong>${r.roomNumber}</strong><br><small style="color:var(--ink-muted)">${r.floor||''}</small></td>
-      <td><span class="badge badge-gold">${r.type}</span></td>
-      <td>${cur} ${(r.price||0).toLocaleString()}</td>
-      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.amenities||'—'}</td>
-      <td>${statusBadge}</td>
-      <td>
+    const actions = isStaff ? '' : `
         <div style="display:flex;gap:6px;">
           ${r.status!=='Occupied'?`<button class="btn btn-ghost btn-sm" onclick="toggleRoomStatus('${r.id}','${r.status}')"><i class="fas fa-sync-alt"></i></button>`:''}
           <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteRoom('${r.id}','${r.roomNumber}')"><i class="fas fa-trash"></i></button>
-        </div>
-      </td>
+        </div>`;
+    return `<tr>
+      <td><strong>${r.roomNumber}</strong><br><small style="color:var(--ink-muted)">${r.floor||''}</small></td>
+      <td><span class="badge badge-gold">${r.type}</span></td>
+      ${isStaff ? '' : `<td>${cur} ${(r.price||0).toLocaleString()}</td>`}
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.amenities||'—'}</td>
+      <td>${statusBadge}</td>
+      ${isStaff ? '' : `<td>${actions}</td>`}
     </tr>`;
   }).join('');
+  // Also refresh staff dashboard room grid if visible
+  if (userRole !== 'owner' && userRole !== 'manager') updateStaffDashboard();
 }
 
 // ===== BOOKINGS =====
@@ -1332,6 +1403,87 @@ function renderPayments() {
       <td><button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deletePayment('${p.id}')"><i class="fas fa-trash"></i></button></td>
     </tr>`;
   }).join('');
+}
+
+// ===== STAFF DASHBOARD =====
+function updateStaffDashboard() {
+  const cur = currentBiz?.currency || 'KES';
+  const today = new Date().toISOString().split('T')[0];
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  const staffName = currentUser.displayName || currentUser.email.split('@')[0];
+  setEl('staffDashGreet', `${greet}, ${staffName}`);
+
+  // Room counts
+  const available = rooms.filter(r => r.status === 'Available').length;
+  const occupied = rooms.filter(r => r.status === 'Occupied').length;
+  const total = rooms.length;
+  setEl('sdAvailable', available);
+  setEl('sdAvailableSub', `${total} total rooms`);
+  setEl('sdOccupied', occupied);
+  setEl('sdOccupiedSub', `${total ? Math.round(occupied/total*100) : 0}% occupancy`);
+
+  // Today's bookings (check-in or check-out today)
+  const todayBookings = bookings.filter(b => b.checkIn === today || b.checkOut === today);
+  setEl('sdTodayBookings', todayBookings.length);
+
+  // Today's payments
+  const todayPayments = payments.filter(p => {
+    const d = p.createdAt?.toDate ? p.createdAt.toDate().toISOString().split('T')[0] : null;
+    return d === today;
+  });
+  const todayTotal = todayPayments.reduce((s,p) => s + (p.amount||0), 0);
+  setEl('sdTodayPayments', `${cur} ${todayTotal.toLocaleString()}`);
+  setEl('sdTodayPaymentsSub', `${todayPayments.length} payment${todayPayments.length !== 1 ? 's' : ''} today`);
+
+  // Days worked — from userProfile createdAt stored when staff was invited
+  const staffUser = users.find(u => u.uid === currentUser.uid);
+  if (staffUser?.createdAt?.toDate) {
+    const joined = staffUser.createdAt.toDate();
+    const days = Math.floor((new Date() - joined) / 86400000);
+    setEl('sdDaysWorked', `${days} day${days !== 1 ? 's' : ''} on the team`);
+    setEl('sdJoinedDate', `Joined ${joined.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})}`);
+  } else {
+    setEl('sdDaysWorked', '—');
+    setEl('sdJoinedDate', '');
+  }
+
+  // Room status mini-grid
+  const grid = document.getElementById('sdRoomGrid');
+  if (grid) {
+    if (!rooms.length) {
+      grid.innerHTML = '<p style="color:var(--ink-muted);font-size:13px;">No rooms yet</p>';
+    } else {
+      grid.innerHTML = rooms.map(r => {
+        const isAvail = r.status === 'Available';
+        const color = isAvail ? 'var(--green)' : r.status === 'Occupied' ? 'var(--red)' : 'var(--ink-muted)';
+        const bg = isAvail ? 'var(--green-light)' : r.status === 'Occupied' ? 'var(--red-light)' : 'var(--surface2)';
+        return `<div style="background:${bg};border-radius:var(--radius-sm);padding:12px 10px;text-align:center;">
+          <div style="font-size:15px;font-weight:700;color:${color};">${r.roomNumber}</div>
+          <div style="font-size:10px;color:${color};font-weight:600;margin-top:3px;">${r.status||'—'}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Today's activity table
+  const tbody = document.getElementById('sdBookingsTable');
+  if (tbody) {
+    if (!todayBookings.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-calendar"></i>No activity today</td></tr>';
+    } else {
+      tbody.innerHTML = todayBookings.map(b => {
+        const statusColor = {Confirmed:'badge-info','Checked In':'badge-success','Checked Out':'badge-muted',Cancelled:'badge-danger'}[b.status]||'badge-muted';
+        return `<tr>
+          <td><strong>${b.guestName}</strong></td>
+          <td>${b.roomNumber||'—'}</td>
+          <td>${b.checkIn||'—'}</td>
+          <td>${b.checkOut||'—'}</td>
+          <td><span class="badge ${statusColor}">${b.status}</span></td>
+        </tr>`;
+      }).join('');
+    }
+  }
 }
 
 // ===== USERS =====
@@ -1530,12 +1682,14 @@ window.saveProfile = async () => {
 // ===== NAV =====
 const sectionTitles = {
   dashboard:'Dashboard', rooms:'Rooms', bookings:'Bookings',
-  payments:'Payments', users:'Staff Users', profile:'Business Profile'
+  payments:'Payments', users:'Staff Users', profile:'Business Profile',
+  staffDash:'My Dashboard'
 };
 
 window.showSection = (name) => {
-  const receptionistAllowed = ['rooms','bookings','payments'];
-  if (userRole === 'receptionist' && !receptionistAllowed.includes(name)) {
+  const isStaff = userRole !== 'owner' && userRole !== 'manager';
+  const staffAllowed = ['staffDash','rooms','bookings','payments'];
+  if (isStaff && !staffAllowed.includes(name)) {
     toast('Access restricted — contact your manager','error'); return;
   }
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -1546,6 +1700,7 @@ window.showSection = (name) => {
   });
   setEl('topBarTitle', sectionTitles[name]||name);
   if (name==='profile') loadProfileSection();
+  if (name==='staffDash') updateStaffDashboard();
 };
 
 // ===== MODALS =====
