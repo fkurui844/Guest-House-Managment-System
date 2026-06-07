@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <style>
 :root {
   --ink: #0f0f0f;
@@ -436,6 +437,104 @@ tbody tr:hover td{background:var(--surface2);}
   /* Staff dashboard room grid */
   #sdRoomGrid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))!important;}
 }
+
+/* ===== PERIOD SELECTOR ===== */
+.period-selector {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  background: var(--surface2);
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.period-selector-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 8px;
+}
+
+.period-btn {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.period-btn:hover {
+  border-color: var(--gold);
+  background: var(--gold-light);
+  color: var(--gold-dark);
+}
+
+.period-btn.active {
+  background: var(--gold);
+  color: #fff;
+  border-color: var(--gold);
+}
+
+.period-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.period-inputs input {
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--surface);
+}
+
+.period-inputs input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.12);
+}
+
+.trend-chart-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.trend-chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .period-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .period-inputs {
+    width: 100%;
+  }
+
+  .period-inputs input {
+    flex: 1;
+  }
+}
 </style>
 </head>
 <body>
@@ -634,6 +733,30 @@ service cloud.firestore {
           <h1>Dashboard</h1>
           <p id="dashWelcome">Good morning — here's your overview</p>
         </div>
+
+        <!-- Period Selector -->
+        <div class="period-selector">
+          <div class="period-selector-label">View Period:</div>
+          <button class="period-btn active" onclick="setPeriod('thisMonth')" id="btn-thisMonth">This Month</button>
+          <button class="period-btn" onclick="setPeriod('lastMonth')" id="btn-lastMonth">Last Month</button>
+          <button class="period-btn" onclick="setPeriod('thisYear')" id="btn-thisYear">This Year</button>
+          <button class="period-btn" onclick="setPeriod('lastYear')" id="btn-lastYear">Last Year</button>
+          <button class="period-btn" onclick="setPeriod('allTime')" id="btn-allTime">All Time</button>
+          <button class="period-btn" onclick="setPeriod('custom')" id="btn-custom">Custom</button>
+          <div class="period-inputs" id="customDateRange" style="display:none;">
+            <input type="date" id="periodFromDate" placeholder="From">
+            <span style="color:var(--ink-muted);">to</span>
+            <input type="date" id="periodToDate" placeholder="To">
+            <button class="btn btn-primary btn-sm" onclick="applyCustomPeriod()">Apply</button>
+          </div>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="trend-chart-container" id="trendChartContainer" style="display:none;">
+          <div class="trend-chart-title">Revenue Trend</div>
+          <canvas id="trendChart" height="80"></canvas>
+        </div>
+
         <div class="metrics-grid">
           <div class="metric-card">
             <div class="metric-icon"><i class="fas fa-bed"></i></div>
@@ -2421,23 +2544,207 @@ function renderUsers() {
 }
 
 // ===== DASHBOARD METRICS =====
+// ===== PERIOD STATE & FUNCTIONS =====
+let currentPeriod = 'thisMonth';
+let periodStartDate = null;
+let periodEndDate = null;
+let trendChart = null;
+
+function getPeriodDates(period) {
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  let start, end;
+
+  switch(period) {
+    case 'thisMonth':
+      start = firstDay;
+      end = lastDay;
+      break;
+    case 'lastMonth':
+      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      end = new Date(today.getFullYear(), today.getMonth(), 0);
+      break;
+    case 'thisYear':
+      start = new Date(today.getFullYear(), 0, 1);
+      end = new Date(today.getFullYear(), 11, 31);
+      break;
+    case 'lastYear':
+      start = new Date(today.getFullYear() - 1, 0, 1);
+      end = new Date(today.getFullYear() - 1, 11, 31);
+      break;
+    case 'allTime':
+      start = new Date(2000, 0, 1);
+      end = new Date(2099, 11, 31);
+      break;
+    default:
+      start = periodStartDate;
+      end = periodEndDate;
+  }
+  
+  return { start, end };
+}
+
+window.setPeriod = (period) => {
+  currentPeriod = period;
+  
+  // Update button states
+  document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(`btn-${period}`).classList.add('active');
+  
+  // Show/hide custom date inputs
+  const customInputs = document.getElementById('customDateRange');
+  if (period === 'custom') {
+    customInputs.style.display = 'flex';
+  } else {
+    customInputs.style.display = 'none';
+    updateDashboard();
+  }
+};
+
+window.applyCustomPeriod = () => {
+  const fromDate = v('periodFromDate');
+  const toDate = v('periodToDate');
+  
+  if (!fromDate || !toDate) {
+    toast('Please select both dates', 'error');
+    return;
+  }
+  
+  periodStartDate = new Date(fromDate);
+  periodEndDate = new Date(toDate);
+  
+  if (periodStartDate > periodEndDate) {
+    toast('From date must be before To date', 'error');
+    return;
+  }
+  
+  updateDashboard();
+};
+
+function filterPaymentsByDateRange(startDate, endDate) {
+  return payments.filter(p => {
+    if (!p.createdAt) return false;
+    let pDate = p.createdAt;
+    // Convert Firebase Timestamp to Date
+    if (p.createdAt.toDate) {
+      pDate = p.createdAt.toDate();
+    } else if (typeof p.createdAt === 'string') {
+      pDate = new Date(p.createdAt);
+    }
+    return pDate >= startDate && pDate <= endDate;
+  });
+}
+
+function filterBookingsByDateRange(startDate, endDate) {
+  return bookings.filter(b => {
+    if (!b.checkIn) return false;
+    // checkIn is a string in YYYY-MM-DD format
+    const bDate = new Date(b.checkIn);
+    return bDate >= startDate && bDate <= endDate;
+  });
+}
+
 function updateDashboard() {
   const cur = currentBiz?.currency||'KES';
+  const { start, end } = getPeriodDates(currentPeriod);
+  
+  // Filter data by period
+  const periodPayments = filterPaymentsByDateRange(start, end);
+  const periodBookings = filterBookingsByDateRange(start, end);
+  
+  // Calculate metrics
   const total = rooms.length;
   const occupied = rooms.filter(r=>r.status==='Occupied').length;
   const avail = rooms.filter(r=>r.status==='Available').length;
   const occ = total ? Math.round(occupied/total*100) : 0;
-  const activeBookings = bookings.filter(b=>b.status==='Confirmed'||b.status==='Checked In').length;
-  const totalRev = payments.reduce((s,p)=>s+(p.amount||0),0);
+  const activeBookings = periodBookings.filter(b=>b.status==='Confirmed'||b.status==='Checked In').length;
+  const totalRev = periodPayments.reduce((s,p)=>s+(p.amount||0),0);
 
   setEl('mTotalRooms', total);
   setEl('mOccupancyText', `${occupied} occupied · ${occ}% occupancy`);
   setEl('mBookings', activeBookings);
-  setEl('mBookingsSub', `${bookings.length} total bookings`);
+  setEl('mBookingsSub', `${periodBookings.length} total bookings`);
   setEl('mRevenue', `${cur} ${totalRev.toLocaleString()}`);
-  setEl('mRevenueSub', `${payments.length} payments recorded`);
+  setEl('mRevenueSub', `${periodPayments.length} payments recorded`);
   setEl('mAvailable', avail);
   document.getElementById('mOccupancyBar').style.width = occ + '%';
+  
+  // Update trend chart
+  updateTrendChart(periodPayments);
+}
+
+function updateTrendChart(periodPayments) {
+  if (periodPayments.length === 0) {
+    document.getElementById('trendChartContainer').style.display = 'none';
+    return;
+  }
+  
+  document.getElementById('trendChartContainer').style.display = 'block';
+  
+  // Group payments by date
+  const dailyData = {};
+  periodPayments.forEach(p => {
+    let pDate = p.createdAt;
+    // Convert Firebase Timestamp to Date
+    if (p.createdAt.toDate) {
+      pDate = p.createdAt.toDate();
+    } else if (typeof p.createdAt === 'string') {
+      pDate = new Date(p.createdAt);
+    }
+    const dateStr = pDate.toISOString().split('T')[0];
+    dailyData[dateStr] = (dailyData[dateStr] || 0) + (p.amount || 0);
+  });
+  
+  // Sort by date
+  const sortedDates = Object.keys(dailyData).sort();
+  const labels = sortedDates.map(d => new Date(d).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}));
+  const data = sortedDates.map(d => dailyData[d]);
+  
+  const ctx = document.getElementById('trendChart');
+  
+  if (trendChart) {
+    trendChart.destroy();
+  }
+  
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Revenue',
+        data: data,
+        borderColor: 'var(--gold)',
+        backgroundColor: 'rgba(201, 168, 76, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: 'var(--gold)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 // ===== PROFILE =====
@@ -2509,6 +2816,7 @@ window.showSection = (name) => {
     if (n.getAttribute('onclick')?.includes("'"+name+"'")) n.classList.add('active');
   });
   setEl('topBarTitle', sectionTitles[name]||name);
+  if (name==='dashboard') updateDashboard();
   if (name==='profile') loadProfileSection();
   if (name==='staffDash') updateStaffDashboard();
   updateMobileNavActive(name);
