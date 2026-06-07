@@ -662,21 +662,21 @@ tbody tr:hover td{background:var(--surface2);}
 <!-- Alert Stack -->
 <div class="alert-stack" id="alertStack"></div>
 
-<!-- ===== FIREBASE SETUP SCREEN ===== -->
+<!-- ===== CLOUD SETUP SCREEN ===== -->
 <div id="setupScreen" class="setup-shell" style="display:none;">
   <div class="setup-card">
     <div style="font-family:var(--font-display);font-size:32px;margin-bottom:4px;">Guest House <span style="color:var(--gold);">Management</span></div>
-    <h2>Connect to Firebase</h2>
-    <p>Paste your Firebase project config below. Each business gets their own isolated data in Firestore.</p>
+    <h2>Connect to Cloud Database</h2>
+    <p>Paste your cloud project config below. Each business gets their own isolated data in the database.</p>
 
     <div class="setup-steps">
       <div class="step-item">
-        <h4><i class="fas fa-fire" style="color:var(--gold);margin-right:6px;"></i> Step 1 — Create a Firebase Project</h4>
-        <p>Go to <strong>console.firebase.google.com</strong> → New Project → Enable <strong>Firestore Database</strong> (production mode) and <strong>Authentication</strong> (Email/Password).</p>
+        <h4><i class="fas fa-cloud" style="color:var(--gold);margin-right:6px;"></i> Step 1 — Create a Cloud Project</h4>
+        <p>Set up your cloud database project → Enable <strong>Cloud Database</strong> (production mode) and <strong>Authentication</strong> (Email/Password).</p>
       </div>
       <div class="step-item">
-        <h4><i class="fas fa-shield-alt" style="color:var(--gold);margin-right:6px;"></i> Step 2 — Set Firestore Rules</h4>
-        <p>In Firestore → Rules, paste these security rules so each business only sees their own data:</p>
+        <h4><i class="fas fa-shield-alt" style="color:var(--gold);margin-right:6px;"></i> Step 2 — Set Database Security Rules</h4>
+        <p>In your database rules, paste these security rules so each business only sees their own data:</p>
         <code>rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -695,7 +695,7 @@ service cloud.firestore {
       </div>
       <div class="step-item">
         <h4><i class="fas fa-code" style="color:var(--gold);margin-right:6px;"></i> Step 3 — Paste Your Config</h4>
-        <p>Project Settings → Your apps → Web → Copy the firebaseConfig object values below.</p>
+        <p>Project Settings → Your apps → Web → Copy the config object values below.</p>
       </div>
     </div>
 
@@ -783,7 +783,7 @@ service cloud.firestore {
       </div>
       <div class="auth-feat-card">
         <div class="auth-feat-icon"><i class="fas fa-cloud"></i></div>
-        <div class="auth-feat-title">Cloud Synced via Firebase</div>
+        <div class="auth-feat-title">Cloud Synced — Always Live</div>
         <div class="auth-feat-desc">Your data syncs instantly across all devices. No local installs, no lost records, no downtime.</div>
       </div>
     </div>
@@ -863,7 +863,7 @@ service cloud.firestore {
     </div>
 
     <p style="font-size:11px;color:var(--ink-muted);text-align:center;margin-top:20px;">
-      <a class="btn-link" onclick="showSetup()">⚙ Change Firebase Config</a>
+      <a class="btn-link" onclick="showSetup()">⚙ Change Cloud Config</a>
     </p>
   </div>
 </div>
@@ -1664,7 +1664,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function loadConfig() { return FIREBASE_CONFIG; }
-window.showSetup = () => toast('Firebase is already configured','info');
+window.showSetup = () => toast('Cloud sync is already configured','info');
 window.initFirebase = () => bootFirebase(FIREBASE_CONFIG);
 
 function bootFirebase(cfg) {
@@ -1679,7 +1679,7 @@ function bootFirebase(cfg) {
     });
   } catch(e) {
     showScreen('authScreen');
-    toast('Firebase init failed: ' + e.message,'error');
+    toast('Cloud connection failed: ' + e.message,'error');
   }
 }
 
@@ -1729,7 +1729,7 @@ async function handleAuthState(user) {
     bootApp();
   } catch(e) {
     console.error('Auth state error:', e);
-    toast('Failed to load account: ' + (e.message||'permission denied') + ' — check Firestore rules','error');
+    toast('Failed to load account: ' + (e.message||'permission denied') + ' — check your database access rules','error');
     showScreen('authScreen');
   }
 }
@@ -1835,7 +1835,7 @@ window.doLogin = async () => {
   const btn = document.getElementById('loginBtn');
   const resetBtn = () => { btn.disabled=false; btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Sign In'; };
   btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Signing in…';
-  const timeout = setTimeout(() => { resetBtn(); toast('Sign-in timed out — check your connection or Firebase config','error'); }, 12000);
+  const timeout = setTimeout(() => { resetBtn(); toast('Sign-in timed out — check your connection and try again','error'); }, 12000);
   try {
     await signInWithEmailAndPassword(auth, email, pass);
     clearTimeout(timeout);
@@ -1871,7 +1871,7 @@ window.doRegister = async () => {
   const btn = document.getElementById('registerBtn');
   const resetBtn = () => { btn.disabled=false; btn.innerHTML='<i class="fas fa-building"></i> Create Account'; };
   btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Creating account…';
-  const timeout = setTimeout(() => { resetBtn(); toast('Timed out — check Firestore rules in Firebase Console','error'); }, 15000);
+  const timeout = setTimeout(() => { resetBtn(); toast('Timed out — check your cloud database access rules','error'); }, 15000);
 
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -1901,7 +1901,7 @@ window.doRegister = async () => {
   } catch(e) {
     clearTimeout(timeout);
     const msg = (e.code||'').includes('permission')
-      ? 'Firestore rules are blocking the write — publish open rules in Firebase Console → Firestore → Rules'
+      ? 'Database access rules are blocking the write — update your database security rules'
       : (friendlyAuthError(e.code) || e.message);
     toast(msg, 'error');
     resetBtn();
@@ -3381,8 +3381,8 @@ function friendlyAuthError(code){
     'auth/invalid-email':'Invalid email address',
     'auth/too-many-requests':'Too many attempts — please try again later',
     'auth/network-request-failed':'Network error — check your connection',
-    'auth/operation-not-allowed':'Email/password sign-in is not enabled — enable it in Firebase Console → Authentication → Sign-in method',
-    'permission-denied':'Firestore rules blocked the write — update your Firestore rules (see setup guide)',
+    'auth/operation-not-allowed':'Email/password sign-in is not enabled — contact your system administrator',
+    'permission-denied':'Access rules are blocking the write — update your database security rules',
   }[code] || null;
 }
 </script>
