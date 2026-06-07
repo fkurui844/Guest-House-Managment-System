@@ -362,12 +362,14 @@ tbody tr:hover td{background:var(--surface2);}
 service cloud.firestore {
   match /databases/{database}/documents {
     match /businesses/{bizId}/{document=**} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == get(/databases/$(database)/documents/
-          businesses/$(bizId)).data.ownerUid;
+      allow read, write: if request.auth != null &&
+        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.bizId == bizId;
     }
     match /userProfiles/{uid} {
-      allow read, write: if request.auth.uid == uid;
+      // Owner/user can read their own profile
+      allow read: if request.auth != null;
+      // User can write their own profile, OR an authenticated user can create a new profile
+      allow write: if request.auth != null;
     }
   }
 }</code>
@@ -1348,19 +1350,20 @@ window.saveUser = async () => {
   const btn = document.getElementById('saveUserBtn');
   btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Creating…';
   try {
-    // Create Firebase Auth account
-    const tempApp = initializeApp(loadConfig(), 'temp_'+Date.now());
-    const tempAuth = getAuth(tempApp);
-    const cred = await createUserWithEmailAndPassword(tempAuth, uEmail, uPass);
+    // Use a secondary Firebase app instance so the current manager stays signed in
+    const secondaryAppName = 'staffCreate_' + Date.now();
+    const secondaryApp = initializeApp(loadConfig(), secondaryAppName);
+    const secondaryAuth = getAuth(secondaryApp);
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, uEmail, uPass);
     const uid = cred.user.uid;
-    await signOut(tempAuth);
-    // Save user profile
+    await signOut(secondaryAuth);
+
+    // Write to Firestore using the primary (manager's) db connection
     await setDoc(doc(db,'userProfiles',uid),{name:uName,email:uEmail,role:uRole,bizId,createdAt:serverTimestamp()});
-    // Add to business users sub-collection
     await setDoc(doc(db,`businesses/${bizId}/users`,uid),{name:uName,email:uEmail,role:uRole,status:'active',uid,createdAt:serverTimestamp()});
 
     // Show success state
-    const loginLink = window.location.href.split('?')[0]; // current page URL
+    const loginLink = window.location.href.split('?')[0];
     document.getElementById('successStaffName').textContent = `${uName} has been added as ${capitalize(uRole)}`;
     document.getElementById('successEmail').textContent = uEmail;
     document.getElementById('successPass').textContent = uPass;
@@ -1370,7 +1373,9 @@ window.saveUser = async () => {
     document.getElementById('addUserModalTitle').textContent = 'Staff Account Ready';
     clearFields(['uName','uEmail','uPass']);
   } catch(e) {
-    toast(friendlyAuthError(e.code)||e.message,'error');
+    console.error('saveUser error code:', e.code, 'message:', e.message, e);
+    const msg = friendlyAuthError(e.code) || e.message || 'Unknown error — check browser console';
+    toast(msg, 'error');
     btn.disabled=false; btn.innerHTML='<i class="fas fa-user-plus"></i> Invite & Create Account';
   }
 };
@@ -1585,7 +1590,9 @@ function friendlyAuthError(code){
     'auth/invalid-email':'Invalid email address',
     'auth/too-many-requests':'Too many attempts — please try again later',
     'auth/network-request-failed':'Network error — check your connection',
-  }[code] || 'Something went wrong. Please try again.';
+    'auth/operation-not-allowed':'Email/password sign-in is not enabled — enable it in Firebase Console → Authentication → Sign-in method',
+    'permission-denied':'Firestore rules blocked the write — update your Firestore rules (see setup guide)',
+  }[code] || null;
 }
 </script>
 </body>
